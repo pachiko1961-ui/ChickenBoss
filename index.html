@@ -31,7 +31,7 @@ body{background:#f3f4f6;font-family:Microsoft JhengHei,sans-serif;padding-bottom
 .food-desc{font-size:12px;color:#999;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .food-remark{font-size:11px;color:#888;margin-top:2px;}
 .add-btn{align-self:center;font-size:22px;color:var(--main);cursor:pointer;}
-.modal{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:50;display:none;align-items:center;justify-content:center;padding:16px;}
+.modal{position:fixed;inset:0;background:rgba(0,0,0.6);z-index:50;display:none;align-items:center;justify-content:center;padding:16px;}
 .modal-box{background:#fff;border-radius:12px;width:100%;max-width:360px;overflow:hidden;animation:fadeIn 0.2s;}
 @keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
 .cart-modal{align-items:flex-end;}
@@ -41,12 +41,24 @@ body{background:#f3f4f6;font-family:Microsoft JhengHei,sans-serif;padding-bottom
 .btn{padding:10px;border-radius:8px;border:none;cursor:pointer;font-size:14px;}
 .btn-gray{border:1px solid #ddd;background:#fff;}
 .btn-red{background:var(--main);color:#fff;}
+.btn-green{background:#28a745;color:#fff;}
 .cart-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid #eee;}
 .cart-img{width:56px;height:56px;border-radius:6px;object-fit:cover;}
 .num-btn{width:26px;height:26px;border:1px solid #ccc;border-radius:4px;text-align:center;line-height:26px;display:inline-block;cursor:pointer;}
 .footer-cart{position:fixed;bottom:0;left:0;width:100%;background:#fff;border-top:1px solid #eee;display:flex;align-items:center;justify-content:space-between;padding:12px 16px;z-index:40;}
 .cart-badge{color:var(--main);font-weight:bold;}
 .go-cart{background:var(--main);color:#fff;padding:8px 20px;border-radius:20px;font-size:14px;}
+.order-textarea{
+    width:100%;
+    height:160px;
+    border:1px solid #ddd;
+    border-radius:8px;
+    padding:10px;
+    font-size:13px;
+    white-space:pre-wrap;
+    resize:none;
+    margin:10px 0;
+}
 </style>
 </head>
 <body>
@@ -76,27 +88,40 @@ body{background:#f3f4f6;font-family:Microsoft JhengHei,sans-serif;padding-bottom
             <p id="modalRemark" style="font-size:13px;color:#777;margin:4px 0;"></p>
             <p id="modalDesc" style="color:#666;font-size:14px;line-height:1.6;"></p>
             <div style="display:flex;gap:10px;margin-top:20px;">
-                <button class="btn btn-gray" style="flex:1;" onclick="closeFoodModal()">關閉</button>
-                <button class="btn btn-red" style="flex:1;" onclick="addCartFromModal()">加入購物車</button>
+                <button class="btn btn-gray" onclick="closeFoodModal()">關閉</button>
+                <button class="btn btn-red" onclick="addCartFromModal()">加入購物車</button>
             </div>
         </div>
     </div>
 </div>
 
-<!-- 口味選擇彈窗 -->
-<div id="tasteModal" class="modal">
+<!-- 結帳全域口味彈窗 -->
+<div id="globalTasteModal" class="modal">
     <div class="modal-box" style="padding:20px;">
-        <h3 style="font-size:16px;font-weight:bold;">選擇口味</h3>
+        <h3 style="font-size:16px;font-weight:bold;">選擇整單統一口味</h3>
+        <p style="font-size:12px;color:#777;margin:6px 0;">所有餐點將使用相同口味</p>
         <div class="taste-grid">
-            <label class="taste-label"><input type="radio" name="taste" value="原味" checked> 原味</label>
-            <label class="taste-label"><input type="radio" name="taste" value="蒜味"> 蒜味</label>
-            <label class="taste-label"><input type="radio" name="taste" value="椒麻"> 椒麻</label>
-            <label class="taste-label"><input type="radio" name="taste" value="泰式"> 泰式</label>
-            <label class="taste-label" style="grid-column:1/3;"><input type="radio" name="taste" value="檸檬"> 檸檬</label>
+            <label class="taste-label"><input type="radio" name="globalTaste" value="原味" checked> 原味</label>
+            <label class="taste-label"><input type="radio" name="globalTaste" value="蒜味"> 蒜味</label>
+            <label class="taste-label"><input type="radio" name="globalTaste" value="椒麻"> 椒麻</label>
+            <label class="taste-label"><input type="radio" name="globalTaste" value="泰式"> 泰式</label>
+            <label class="taste-label" style="grid-column:1/3;"><input type="radio" name="globalTaste" value="檸檬"> 檸檬</label>
         </div>
         <div style="display:flex;gap:10px;margin-top:10px;">
-            <button class="btn btn-gray" style="flex:1;" onclick="closeTasteModal()">取消</button>
-            <button class="btn btn-red" style="flex:1;" onclick="confirmAddCart()">確認加入</button>
+            <button class="btn btn-gray" onclick="closeGlobalTaste()">返回購物車</button>
+            <button class="btn btn-red" onclick="showOrderList()">確認產生訂單</button>
+        </div>
+    </div>
+</div>
+
+<!-- 完整訂單清單 + 複製按鈕彈窗 -->
+<div id="orderModal" class="modal">
+    <div class="modal-box" style="padding:20px;max-width:400px;">
+        <h3 style="font-size:16px;font-weight:bold;text-align:center;">✅ 訂單明細</h3>
+        <textarea id="orderText" class="order-textarea" readonly></textarea>
+        <div style="display:flex;gap:10px;">
+            <button class="btn btn-green" style="flex:1;" onclick="copyOrderText()">複製訂單</button>
+            <button class="btn btn-gray" style="flex:1;" onclick="closeOrderModal()">關閉</button>
         </div>
     </div>
 </div>
@@ -114,7 +139,7 @@ body{background:#f3f4f6;font-family:Microsoft JhengHei,sans-serif;padding-bottom
                 <span>總金額</span>
                 <span id="totalPrice" style="font-size:17px;color:var(--main);font-weight:bold;">$0</span>
             </div>
-            <button class="btn btn-red" style="width:100%;padding:12px;">立即結帳</button>
+            <button class="btn btn-red" style="width:100%;padding:12px;" onclick="openGlobalTaste()">立即結帳</button>
         </div>
     </div>
 </div>
@@ -124,17 +149,17 @@ body{background:#f3f4f6;font-family:Microsoft JhengHei,sans-serif;padding-bottom
 const SUPABASE_URL = "https://zexwhzgxunfnbschkizq.supabase.co";
 const SUPABASE_KEY = "sb_publishable_OPftLOAUJFzwKZ8eK7GIXg_2LEEMMwn";
 // ===========================================
-
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 let cateList = [];
 let foodList = [];
 let nowCateId = 1;
 let nowFood = null;
 let cart = [];
+let currentTaste = "";
 
 // 載入分類
 async function loadCategory(){
-    const {data} = await supabase.from("food_category").select("*").order("sort");
+    const {data} = await sbClient.from("food_category").select("*").order("sort");
     cateList = data;
     let html = "";
     data.forEach((item,idx)=>{
@@ -143,17 +168,15 @@ async function loadCategory(){
     document.getElementById("cateTab").innerHTML = html;
     if(data.length>0) loadFood(data[0].id);
 }
-
 function switchCate(cid,dom){
     document.querySelectorAll(".tab-item").forEach(t=>t.classList.remove("tab-active"));
     dom.classList.add("tab-active");
     nowCateId = cid;
     loadFood(cid);
 }
-
 // 載入菜品
 async function loadFood(cateId){
-    const {data} = await supabase
+    const {data} = await sbClient
         .from("food_product")
         .select("*")
         .eq("cate_id",cateId)
@@ -171,7 +194,7 @@ async function loadFood(cateId){
                 <div class="food-desc">${f.description||''}</div>
                 <div class="food-remark">備註：${f.remark||'無'}</div>
             </div>
-            <div class="add-btn" onclick="event.stopPropagation();openTasteSelect(${f.id})">
+            <div class="add-btn" onclick="event.stopPropagation();addCartDirect(${f.id})">
                 <i class="fa fa-plus-circle"></i>
             </div>
         </div>
@@ -179,8 +202,7 @@ async function loadFood(cateId){
     })
     document.getElementById("foodList").innerHTML = html;
 }
-
-// 菜品詳情
+// 開菜品詳細彈窗
 function openFoodDetail(fid){
     let food = foodList.find(v=>v.id===fid);
     nowFood = food;
@@ -194,62 +216,48 @@ function openFoodDetail(fid){
 function closeFoodModal(){
     document.getElementById("foodModal").style.display = "none";
 }
-function addCartFromModal(){
-    closeFoodModal();
-    openTasteSelect(nowFood.id);
-}
-
-// 口味選擇
-function openTasteSelect(fid){
+// 直接加入購物車
+function addCartDirect(fid){
     let food = foodList.find(v=>v.id===fid);
-    nowFood = food;
-    document.getElementById("tasteModal").style.display = "flex";
-}
-function closeTasteModal(){
-    document.getElementById("tasteModal").style.display = "none";
-}
-
-// 加入購物車
-function confirmAddCart(){
-    let taste = document.querySelector('input[name="taste"]:checked').value;
-    let exist = cart.find(v=>v.id===nowFood.id && v.taste===taste);
+    let exist = cart.find(item=>item.id === food.id);
     if(exist){
-        exist.num++;
+        exist.num += 1;
     }else{
         cart.push({
-            id:nowFood.id,
-            name:nowFood.name,
-            price:nowFood.price,
-            taste:taste,
+            id:food.id,
+            name:food.name,
+            price:food.price,
             num:1,
-            img:nowFood.image_url
+            img:food.image_url
         })
     }
-    closeTasteModal();
     updateCartNum();
-    alert(`已加入 ${nowFood.name} - ${taste}`);
+    alert(`已加入【${food.name}】，結帳時統一選擇整單口味`);
 }
-
+// 詳情頁加入購物車
+function addCartFromModal(){
+    closeFoodModal();
+    addCartDirect(nowFood.id);
+}
+// 更新購物車數量
 function updateCartNum(){
-    let total = cart.reduce((s,i)=>s+i.num,0);
+    let total = cart.reduce((sum,item)=>sum + item.num,0);
     document.getElementById("cartNum").innerText = total;
 }
-
-// 購物車
+// 開購物車
 function openCart(){
     let html = "";
-    let total = 0;
-    if(cart.length<=0){
-        html = '<p style="text-align:center;color:#999;padding:30px 0;">購物車尚無餐點</p>';
+    let totalMoney = 0;
+    if(cart.length <= 0){
+        html = '<p style="text-align:center;color:#999;padding:40px 0;">購物車尚無餐點，請先加購商品</p>';
     }else{
         cart.forEach((item,idx)=>{
-            total += item.price * item.num;
+            totalMoney += item.price * item.num;
             html += `
             <div class="cart-row">
                 <img src="${item.img||'https://picsum.photos/400/300'}" class="cart-img">
                 <div style="flex:1;">
                     <p>${item.name}</p>
-                    <p style="font-size:12px;color:#777;">口味：${item.taste}</p>
                     <p style="color:var(--main);">$${item.price}</p>
                 </div>
                 <div>
@@ -262,17 +270,80 @@ function openCart(){
         })
     }
     document.getElementById("cartList").innerHTML = html;
-    document.getElementById("totalPrice").innerText = "$"+total;
+    document.getElementById("totalPrice").innerText = "$" + totalMoney;
     document.getElementById("cartModal").style.display = "flex";
 }
 function closeCart(){
     document.getElementById("cartModal").style.display = "none";
 }
+// 數量增減
 function cartPlus(idx){
-    cart[idx].num++;openCart();updateCartNum();
+    cart[idx].num++;
+    openCart();
+    updateCartNum();
 }
 function cartMinus(idx){
-    cart[idx].num<=1?cart.splice(idx,1):cart[idx].num--;openCart();updateCartNum();
+    if(cart[idx].num <= 1){
+        cart.splice(idx,1);
+    }else{
+        cart[idx].num--;
+    }
+    openCart();
+    updateCartNum();
+}
+// 開口味選擇彈窗
+function openGlobalTaste(){
+    if(cart.length === 0){
+        alert("購物車沒有商品，無法結帳");
+        return;
+    }
+    closeCart();
+    document.getElementById("globalTasteModal").style.display = "flex";
+}
+function closeGlobalTaste(){
+    document.getElementById("globalTasteModal").style.display = "none";
+}
+// 產生完整訂單文字並彈窗
+function showOrderList(){
+    currentTaste = document.querySelector('input[name="globalTaste"]:checked').value;
+    closeGlobalTaste();
+
+    let totalAll = 0;
+    let orderStr = "===============================\n";
+    orderStr += "        雞老闆輕食料理\n";
+    orderStr += "===============================\n";
+    orderStr += `統一整單口味：${currentTaste}\n\n`;
+    orderStr += "餐點清單：\n";
+
+    cart.forEach(item=>{
+        let sub = item.price * item.num;
+        totalAll += sub;
+        orderStr += `• ${item.name}  x${item.num}  $${item.price}  小計$${sub}\n`;
+    })
+
+    orderStr += `\n===============================\n`;
+    orderStr += `訂單總金額：$${totalAll}\n`;
+    orderStr += `===============================`;
+
+    // 填入文字框
+    document.getElementById("orderText").value = orderStr;
+    document.getElementById("orderModal").style.display = "flex";
+}
+// 複製訂單到剪貼簿
+async function copyOrderText(){
+    const text = document.getElementById("orderText").value;
+    try {
+        await navigator.clipboard.writeText(text);
+        alert("✅ 訂單已複製到剪貼簿！可貼至LINE/備忘錄");
+    } catch(err) {
+        alert("❌ 複製失敗，請手動選取文字複製");
+    }
+}
+function closeOrderModal(){
+    document.getElementById("orderModal").style.display = "none";
+    // 清空購物車（可保留不清除，依需求刪除這兩行）
+    cart = [];
+    updateCartNum();
 }
 
 window.onload=()=>{
