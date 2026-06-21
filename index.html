@@ -309,9 +309,9 @@ function showOrderList(){
     closeGlobalTaste();
 
     let totalAll = 0;
-    let orderStr = "====================\n";
-    orderStr += "        雞老闆輕食料理\n";
-    orderStr += "====================\n";
+    let orderStr = "================\n";
+    orderStr += " 雞老闆輕食料理\n";
+    orderStr += "================\n";
     orderStr += `統一整單口味：${currentTaste}\n\n`;
     orderStr += "餐點清單：\n";
 
@@ -321,9 +321,9 @@ function showOrderList(){
         orderStr += `• ${item.name}  x${item.num}  $${item.price}  小計$${sub}\n`;
     })
 
-    orderStr += `\n====================\n`;
+    orderStr += `\n================\n`;
     orderStr += `訂單總金額：$${totalAll}\n`;
-    orderStr += `====================`;
+    orderStr += `================`;
 
     // 填入文字框
     document.getElementById("orderText").value = orderStr;
