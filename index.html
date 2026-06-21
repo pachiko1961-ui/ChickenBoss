@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>雞老闆輕食料理 - 線上點餐</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{
     --main:#e63946;
@@ -14,8 +15,7 @@
 }
 *{margin:0;padding:0;box-sizing:border-box;}
 body{background:#f3f4f6;font-family:Microsoft JhengHei,sans-serif;padding-bottom:80px;}
-.sticky-top{position:sticky;top:0;z-index:30;}
-.header{background:var(--main);color:#fff;text-align:center;padding:16px 0;box-shadow:0 2px 6px #0002;}
+.header{background:var(--main);color:#fff;text-align:center;padding:16px 0;box-shadow:0 2px 6px #0002;position:sticky;top:0;z-index:30;}
 .header h1{font-size:20px;font-weight:bold;}
 .header p{font-size:13px;opacity:0.9;margin-top:4px;}
 .tab-wrap{display:flex;overflow-x:auto;background:#fff;position:sticky;top:60px;z-index:20;box-shadow:0 1px 3px #0001;}
@@ -29,15 +29,13 @@ body{background:#f3f4f6;font-family:Microsoft JhengHei,sans-serif;padding-bottom
 .food-name{font-weight:bold;font-size:15px;}
 .food-price{color:var(--main);font-weight:bold;margin:4px 0;}
 .food-desc{font-size:12px;color:#999;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.food-remark{font-size:11px;color:#888;margin-top:2px;}
 .add-btn{align-self:center;font-size:22px;color:var(--main);cursor:pointer;}
-
-/* 彈窗通用 */
 .modal{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:50;display:none;align-items:center;justify-content:center;padding:16px;}
 .modal-box{background:#fff;border-radius:12px;width:100%;max-width:360px;overflow:hidden;animation:fadeIn 0.2s;}
 @keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
 .cart-modal{align-items:flex-end;}
 .cart-content{background:#fff;width:100%;border-radius:20px 20px 0 0;padding:16px;max-height:70vh;overflow-y:auto;}
-
 .taste-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0;}
 .taste-label{border:1px solid #ddd;border-radius:8px;padding:12px;text-align:center;cursor:pointer;}
 .btn{padding:10px;border-radius:8px;border:none;cursor:pointer;font-size:14px;}
@@ -52,27 +50,16 @@ body{background:#f3f4f6;font-family:Microsoft JhengHei,sans-serif;padding-bottom
 </style>
 </head>
 <body>
-<!-- 頂部標題 -->
-<div class="header sticky-top">
+<div class="header">
     <h1>雞老闆輕食料理</h1>
     <p>掃碼快速點餐 · 新鮮現做</p>
 </div>
 
-<!-- 分類標籤 -->
-<div class="tab-wrap">
-    <div class="tab-item tab-active" data-type="recommend">雞老闆推薦菜單</div>
-    <div class="tab-item" data-type="meat">肉類</div>
-    <div class="tab-item" data-type="offal">內臟</div>
-    <div class="tab-item" data-type="veg">時蔬類</div>
-    <div class="tab-item" data-type="other">其他類</div>
-</div>
-
-<!-- 菜品列表 -->
+<div class="tab-wrap" id="cateTab"></div>
 <div class="container" id="foodList"></div>
 
-<!-- 底部購物車 -->
 <div class="footer-cart">
-    <div class="flex-item">
+    <div>
         <i class="fa fa-shopping-cart" style="font-size:18px;color:var(--main);"></i>
         <span style="margin-left:6px;">共 <span id="cartNum" class="cart-badge">0</span> 項</span>
     </div>
@@ -86,6 +73,7 @@ body{background:#f3f4f6;font-family:Microsoft JhengHei,sans-serif;padding-bottom
         <div style="padding:16px;">
             <h2 id="modalName" style="font-size:17px;font-weight:bold;"></h2>
             <p id="modalPrice" style="color:var(--main);font-weight:bold;margin:6px 0;"></p>
+            <p id="modalRemark" style="font-size:13px;color:#777;margin:4px 0;"></p>
             <p id="modalDesc" style="color:#666;font-size:14px;line-height:1.6;"></p>
             <div style="display:flex;gap:10px;margin-top:20px;">
                 <button class="btn btn-gray" style="flex:1;" onclick="closeFoodModal()">關閉</button>
@@ -132,46 +120,56 @@ body{background:#f3f4f6;font-family:Microsoft JhengHei,sans-serif;padding-bottom
 </div>
 
 <script>
-// 菜品資料
-const foodData = [
-    {id:1,name:"招牌香雞排",price:75,type:"recommend",img:"https://picsum.photos/400/300?1",desc:"本店人氣第一名，外酥內嫩鹹香入味，輕食無負擔。"},
-    {id:2,name:"綜合輕食拼盤",price:120,type:"recommend",img:"https://picsum.photos/400/300?2",desc:"多種食材一次滿足，朋友聚餐、點心首選。"},
-    {id:3,name:"香烤雞肉",price:65,type:"meat",img:"https://picsum.photos/400/300?3",desc:"低脂清爽輕食，健身族群最愛。"},
-    {id:4,name:"鹹酥豬肉",price:80,type:"meat",img:"https://picsum.photos/400/300?4",desc:"鹹香夠味，配茶配酒都合適。"},
-    {id:5,name:"鹹酥雞胗",price:55,type:"offal",img:"https://picsum.photos/400/300?5",desc:"Q彈有嚼勁，越吃越涮嘴。"},
-    {id:6,name:"香煎大腸",price:90,type:"offal",img:"https://picsum.photos/400/300?6",desc:"處理乾淨無腥味，香氣濃厚。"},
-    {id:7,name:"鹹酥高麗菜",price:40,type:"veg",img:"https://picsum.photos/400/300?7",desc:"清爽解膩，吃炸物必點配菜。"},
-    {id:8,name:"綜合時蔬",price:50,type:"veg",img:"https://picsum.photos/400/300?8",desc:"多種新鮮蔬菜搭配，營養均衡。"},
-    {id:9,name:"黃金薯條",price:45,type:"other",img:"https://picsum.photos/400/300?9",desc:"外脆內綿，大人小孩都喜愛。"},
-    {id:10,name:"手作甜不辣",price:50,type:"other",img:"https://picsum.photos/400/300?10",desc:"手工製作口感紮實，風味濃厚。"}
-]
+// ========== 填入你的 Supabase 資訊 ==========
+const SUPABASE_URL = "https://zexwhzgxunfnbschkizq.supabase.co";
+const SUPABASE_KEY = "sb_publishable_OPftLOAUJFzwKZ8eK7GIXg_2LEEMMwn";
+// ===========================================
 
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+let cateList = [];
+let foodList = [];
+let nowCateId = 1;
 let nowFood = null;
 let cart = [];
-let nowType = "recommend";
 
-// 切換分類
-document.querySelectorAll(".tab-item").forEach(item=>{
-    item.addEventListener("click",function(){
-        document.querySelectorAll(".tab-item").forEach(t=>t.classList.remove("tab-active"));
-        this.classList.add("tab-active");
-        nowType = this.dataset.type;
-        renderFood();
-    })
-})
-
-// 渲染菜單
-function renderFood(){
+// 載入分類
+async function loadCategory(){
+    const {data} = await supabase.from("food_category").select("*").order("sort");
+    cateList = data;
     let html = "";
-    let list = foodData.filter(item=>item.type === nowType);
-    list.forEach(f=>{
+    data.forEach((item,idx)=>{
+        html += `<div class="tab-item ${idx===0?'tab-active':''}" data-cid="${item.id}" onclick="switchCate(${item.id},this)">${item.name}</div>`;
+    })
+    document.getElementById("cateTab").innerHTML = html;
+    if(data.length>0) loadFood(data[0].id);
+}
+
+function switchCate(cid,dom){
+    document.querySelectorAll(".tab-item").forEach(t=>t.classList.remove("tab-active"));
+    dom.classList.add("tab-active");
+    nowCateId = cid;
+    loadFood(cid);
+}
+
+// 載入菜品
+async function loadFood(cateId){
+    const {data} = await supabase
+        .from("food_product")
+        .select("*")
+        .eq("cate_id",cateId)
+        .eq("status",true)
+        .order("sort");
+    foodList = data;
+    let html = "";
+    data.forEach(f=>{
         html += `
         <div class="food-item" onclick="openFoodDetail(${f.id})">
-            <img src="${f.img}" class="food-img">
+            <img src="${f.image_url||'https://picsum.photos/400/300'}" class="food-img">
             <div class="food-info">
                 <div class="food-name">${f.name}</div>
                 <div class="food-price">$${f.price}</div>
-                <div class="food-desc">${f.desc}</div>
+                <div class="food-desc">${f.description||''}</div>
+                <div class="food-remark">備註：${f.remark||'無'}</div>
             </div>
             <div class="add-btn" onclick="event.stopPropagation();openTasteSelect(${f.id})">
                 <i class="fa fa-plus-circle"></i>
@@ -182,14 +180,15 @@ function renderFood(){
     document.getElementById("foodList").innerHTML = html;
 }
 
-// 開啟菜品詳情
-function openFoodDetail(id){
-    let food = foodData.find(v=>v.id === id);
+// 菜品詳情
+function openFoodDetail(fid){
+    let food = foodList.find(v=>v.id===fid);
     nowFood = food;
-    document.getElementById("modalImg").src = food.img;
+    document.getElementById("modalImg").src = food.image_url||'https://picsum.photos/400/300';
     document.getElementById("modalName").innerText = food.name;
     document.getElementById("modalPrice").innerText = "售價：$"+food.price;
-    document.getElementById("modalDesc").innerText = food.desc;
+    document.getElementById("modalRemark").innerText = "備註："+(food.remark||"無");
+    document.getElementById("modalDesc").innerText = food.description||"無介紹";
     document.getElementById("foodModal").style.display = "flex";
 }
 function closeFoodModal(){
@@ -200,21 +199,22 @@ function addCartFromModal(){
     openTasteSelect(nowFood.id);
 }
 
-// 口味選擇彈窗
-function openTasteSelect(id){
-    nowFood = foodData.find(v=>v.id === id);
+// 口味選擇
+function openTasteSelect(fid){
+    let food = foodList.find(v=>v.id===fid);
+    nowFood = food;
     document.getElementById("tasteModal").style.display = "flex";
 }
 function closeTasteModal(){
     document.getElementById("tasteModal").style.display = "none";
 }
 
-// 確認加入購物車
+// 加入購物車
 function confirmAddCart(){
     let taste = document.querySelector('input[name="taste"]:checked').value;
-    let exist = cart.find(v=>v.id === nowFood.id && v.taste === taste);
+    let exist = cart.find(v=>v.id===nowFood.id && v.taste===taste);
     if(exist){
-        exist.num += 1;
+        exist.num++;
     }else{
         cart.push({
             id:nowFood.id,
@@ -222,37 +222,35 @@ function confirmAddCart(){
             price:nowFood.price,
             taste:taste,
             num:1,
-            img:nowFood.img
+            img:nowFood.image_url
         })
     }
     closeTasteModal();
-    updateCartCount();
-    alert("已加入："+nowFood.name+" - "+taste);
+    updateCartNum();
+    alert(`已加入 ${nowFood.name} - ${taste}`);
 }
 
-// 更新購物車數量
-function updateCartCount(){
-    let total = 0;
-    cart.forEach(item=>total += item.num);
+function updateCartNum(){
+    let total = cart.reduce((s,i)=>s+i.num,0);
     document.getElementById("cartNum").innerText = total;
 }
 
-// 開啟購物車
+// 購物車
 function openCart(){
     let html = "";
-    let totalMoney = 0;
-    if(cart.length <= 0){
+    let total = 0;
+    if(cart.length<=0){
         html = '<p style="text-align:center;color:#999;padding:30px 0;">購物車尚無餐點</p>';
     }else{
         cart.forEach((item,idx)=>{
-            totalMoney += item.price * item.num;
+            total += item.price * item.num;
             html += `
             <div class="cart-row">
-                <img src="${item.img}" class="cart-img">
+                <img src="${item.img||'https://picsum.photos/400/300'}" class="cart-img">
                 <div style="flex:1;">
-                    <p style="font-size:14px;">${item.name}</p>
+                    <p>${item.name}</p>
                     <p style="font-size:12px;color:#777;">口味：${item.taste}</p>
-                    <p style="color:var(--main);margin-top:4px;">$${item.price}</p>
+                    <p style="color:var(--main);">$${item.price}</p>
                 </div>
                 <div>
                     <span class="num-btn" onclick="cartMinus(${idx})">-</span>
@@ -264,29 +262,22 @@ function openCart(){
         })
     }
     document.getElementById("cartList").innerHTML = html;
-    document.getElementById("totalPrice").innerText = "$"+totalMoney;
+    document.getElementById("totalPrice").innerText = "$"+total;
     document.getElementById("cartModal").style.display = "flex";
 }
 function closeCart(){
     document.getElementById("cartModal").style.display = "none";
 }
 function cartPlus(idx){
-    cart[idx].num++;
-    openCart();
-    updateCartCount();
+    cart[idx].num++;openCart();updateCartNum();
 }
 function cartMinus(idx){
-    if(cart[idx].num <= 1){
-        cart.splice(idx,1);
-    }else{
-        cart[idx].num--;
-    }
-    openCart();
-    updateCartCount();
+    cart[idx].num<=1?cart.splice(idx,1):cart[idx].num--;openCart();updateCartNum();
 }
 
-// 初始載入
-renderFood();
+window.onload=()=>{
+    loadCategory();
+}
 </script>
 </body>
 </html>
