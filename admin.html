@@ -26,6 +26,32 @@
         .text-gray-500{color:#6b7280;font-size:0.9rem;}
         .flavor-info{background:#fef3c7;padding:0.5rem;border-radius:0.5rem;margin:0.5rem 0;}
         .order-item{border-left:4px solid #ea580c;padding-left:0.5rem;margin:0.25rem 0;}
+        /* 新增按鈕樣式 */
+        .btn{
+            padding:0.5rem 1rem;
+            border:none;
+            border-radius:0.5rem;
+            cursor:pointer;
+            font-weight:bold;
+            margin:0 0.5rem 0 0;
+        }
+        .btn-complete{background:#16a34a;color:white;}
+        .btn-complete:hover{background:#15803d;}
+        .btn-delete{background:#dc2626;color:white;}
+        .btn-delete:hover{background:#b91c1c;}
+        .status-tag{
+            padding:0.25rem 0.5rem;
+            border-radius:0.25rem;
+            font-size:0.8rem;
+            font-weight:bold;
+        }
+        .status-pending{background:#fbbf24;color:white;}
+        .status-completed{background:#16a34a;color:white;}
+        /* 已完成訂單樣式 */
+        .order-completed{
+            opacity:0.8;
+            border-left:4px solid #16a34a;
+        }
     </style>
 </head>
 <body>
@@ -75,6 +101,45 @@
             }).subscribe()
         }
 
+        // 標記訂單為已完成
+        async function completeOrder(orderId) {
+            if (!confirm('確認將此訂單標記為已完成？')) return;
+            
+            const { error } = await client
+                .from('order_list')
+                .update({ 
+                    status: 'completed',
+                    complete_time: new Date().toISOString()
+                })
+                .eq('id', orderId);
+
+            if (error) {
+                console.log('更新訂單狀態錯誤', error);
+                alert('標記完成失敗，請稍後再試');
+            } else {
+                alert('✅ 訂單已標記為完成！');
+                getOrderList(); // 重新加載訂單列表
+            }
+        }
+
+        // 刪除訂單
+        async function deleteOrder(orderId) {
+            if (!confirm('⚠️ 確認要刪除此訂單？此操作無法復原！')) return;
+            
+            const { error } = await client
+                .from('order_list')
+                .delete()
+                .eq('id', orderId);
+
+            if (error) {
+                console.log('刪除訂單錯誤', error);
+                alert('刪除訂單失敗，請稍後再試');
+            } else {
+                alert('🗑️ 訂單已成功刪除！');
+                getOrderList(); // 重新加載訂單列表
+            }
+        }
+
         // 修正排序語法，解決 .order is not a function
         async function getOrderList(){
             const {data,error} = await client
@@ -99,6 +164,12 @@
                         smallSet:'小套餐'
                     }[order.order_type] || '一般點餐';
 
+                    // 訂單狀態處理（預設為 pending）
+                    const orderStatus = order.status || 'pending';
+                    const statusText = orderStatus === 'completed' ? '已完成' : '待處理';
+                    const statusClass = orderStatus === 'completed' ? 'status-completed' : 'status-pending';
+                    const orderClass = orderStatus === 'completed' ? 'order-completed' : '';
+
                     // 組裝菜品清單（含補差價標示）
                     let foodList = '';
                     order.select_food.forEach((item, idx) => {
@@ -106,7 +177,7 @@
                         if (['smallBamboo','family','smallSet'].includes(order.order_type) && item.price > 20) {
                             diffTxt = ` (補${item.price - 20}元)`;
                         }
-                        foodList += `<div class="order-item">${idx+1}. ${item.name} ${item.price}元${diffTxt}</div>`;
+                        foodList += `<div class="order-item ${orderClass}">${idx+1}. ${item.name} ${item.price}元${diffTxt}</div>`;
                     });
 
                     // 口味資訊處理
@@ -120,11 +191,19 @@
                         ? order.total_price - order.diff_price - (order.flavor_price || 0) 
                         : 0;
 
+                    // 按鈕渲染邏輯：已完成訂單隱藏完成按鈕
+                    const completeBtn = orderStatus === 'pending' 
+                        ? `<button class="btn btn-complete" onclick="completeOrder(${order.id})">✅ 完成</button>` 
+                        : '';
+
                     html += `
-                    <div class="border rounded p-4 mb-3 shadow-sm">
+                    <div class="border rounded p-4 mb-3 shadow-sm ${orderClass}">
                         <div class="flex justify-between items-center mb-2">
                             <div class="font-bold text-lg">訂單編號：${order.order_no}</div>
-                            <div class="text-gray-500">${order.create_time}</div>
+                            <div>
+                                <span class="status-tag ${statusClass}">${statusText}</span>
+                                <span class="text-gray-500 ml-2">${order.create_time}</span>
+                            </div>
                         </div>
                         <div class="mt-1"><strong>訂單類型：</strong>${typeText}</div>
                         <div class="mt-1"><strong>手機末3碼：</strong>${order.phone_last3 || '未填寫'}</div>
@@ -144,6 +223,12 @@
                             <div><strong>小菜補差價：</strong>${order.diff_price} 元</div>
                             <div><strong>口味加價：</strong>${order.flavor_price || 0} 元</div>
                             <div class="text-red-600 font-bold mt-1">應付總金額：${order.total_price} 元</div>
+                        </div>
+                        
+                        <!-- 新增操作按鈕區域 -->
+                        <div class="mt-4">
+                            ${completeBtn}
+                            <button class="btn btn-delete" onclick="deleteOrder(${order.id})">🗑️ 刪除</button>
                         </div>
                     </div>
                     `;
