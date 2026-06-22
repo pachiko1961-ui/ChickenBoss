@@ -1,183 +1,96 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>雞老闆後台管理系統</title>
-<style>
-*{margin:0;padding:0;box-sizing:border-box;}
-body{padding:20px;font-family:微軟正黑體;background:#f5f5f5;}
-.box{background:#fff;padding:20px;border-radius:10px;margin-bottom:20px;}
-h3{margin-bottom:15px;color:#d63031;}
-input,select,textarea{width:100%;padding:8px;margin:6px 0;border:1px solid #ccc;border-radius:6px;}
-button{padding:8px 16px;background:#d63031;color:#fff;border:none;border-radius:6px;cursor:pointer;margin:5px 0;}
-table{width:100%;border-collapse:collapse;margin-top:10px;}
-th,td{border:1px solid #ddd;padding:8px;text-align:center;}
-.tab{display:flex;gap:10px;margin-bottom:15px;}
-.tab-btn{padding:8px 15px;border-radius:6px;border:1px solid #d63031;color:#d63031;cursor:pointer;}
-.tab-btn.active{background:#d63031;color:#fff;}
-.hide{display:none;}
-</style>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>雞老闆後台 - 出菜管理</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.43.0"></script>
+    <style>
+        body{background:#f3f4f6;margin:0;padding:0;font-family:system-ui,sans-serif;}
+        .max-w-6xl{max-width:1400px;margin:0 auto;padding:1rem;}
+        .text-2xl{font-size:1.5rem;}
+        .font-bold{font-weight:bold;}
+        .text-center{text-align:center;}
+        .mb-6{margin-bottom:1.5rem;}
+        .bg-white{background:#fff;}
+        .rounded-xl{border-radius:1rem;}
+        .p-4{padding:1rem;}
+        .shadow{box-shadow:0 2px 8px #00000015;}
+        .mb-4{margin-bottom:1rem;}
+        .border{border:1px solid #ddd;}
+        .rounded{border-radius:0.5rem;}
+        .mb-3{margin-bottom:0.75rem;}
+        .mt-1{margin-top:0.25rem;}
+        .text-red-600{color:#dc2626;}
+    </style>
 </head>
 <body>
-<h2>雞老闆輕食料理 後台管理</h2>
+    <div class="max-w-6xl">
+        <h1 class="text-2xl font-bold text-center mb-6">🏪 雞老闆輕食料理 後台出菜系統</h1>
+        <div class="bg-white rounded-xl p-4 shadow mb-4">
+            <h2 class="font-bold text-lg mb-3">📋 最新待出餐訂單</h2>
+            <div id="orderBox"></div>
+        </div>
+    </div>
 
-<div class="tab">
-    <div class="tab-btn active" onclick="switchTab(0)">分類管理</div>
-    <div class="tab-btn" onclick="switchTab(1)">菜品管理</div>
-</div>
+    <script>
+        // 正確填入你的專案網址 + ANON 匿名金鑰
+        const SUPABASE_URL = "https://zexwhzgxunfnbschkizq.supabase.co";
+        // 這裡一定要換成 ANON PUBLIC 金鑰，不是 sb_publishable 開頭
+        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpleHdoemd4dW5mbmJzY2hraXpxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4MzE1MjksImV4cCI6MjA5NzQwNzUyOX0.X-sd8FcJ2AjLq9Ty_KWvjwfJCc2P4IItjRyxSu2vgiU";
+        const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-<!-- 分類管理 -->
-<div class="box" id="cateBox">
-    <h3>新增分類</h3>
-    <input type="text" id="cateName" placeholder="輸入分類名稱">
-    <input type="number" id="cateSort" placeholder="排序數字" value="0">
-    <button onclick="addCategory">新增</button>
-    <h3>分類列表</h3>
-    <div id="cateTable"></div>
-</div>
+        // 實時監聽新訂單
+        function watchOrder(){
+            client.channel('new_order')
+            .on('postgres_changes',{
+                event:'INSERT',
+                schema:'public',
+                table:'order_list'
+            },()=>{
+                alert('🔔 有新訂單進來了！');
+                getOrderList();
+            }).subscribe()
+        }
 
-<!-- 菜品管理 -->
-<div class="box hide" id="foodBox">
-    <h3>新增/編輯菜品</h3>
-    <select id="selectCate"></select>
-    <input type="text" id="foodName" placeholder="菜品名稱">
-    <input type="number" id="foodPrice" placeholder="價格">
-    <input type="text" id="foodImg" placeholder="圖片網址">
-    <textarea id="foodDesc" placeholder="菜品詳細介紹"></textarea>
-    <textarea id="foodRemark" placeholder="備註資訊"></textarea>
-    <input type="hidden" id="editFoodId">
-    <button onclick="saveFood()">儲存菜品</button>
-    <h3>菜品列表</h3>
-    <div id="foodTable"></div>
-</div>
+        // 修正排序語法，解決 .order is not a function
+        async function getOrderList(){
+            const {data,error} = await client
+                .from('order_list')
+                .select('*')
+                .order('create_time',{ascending:false});
 
-<script>
-// 填入同樣 Supabase 資訊
-const SUPABASE_URL = "https://zexwhzgxunfnbschkizq.supabase.co";
-const SUPABASE_KEY = "sb_publishable_OPftLOAUJFzwKZ8eK7GIXg_2LEEMMwn";
-const supabase = window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+            if(error){
+                console.log('讀取訂單錯誤',error);
+                return;
+            }
 
-function switchTab(idx){
-    document.querySelectorAll(".tab-btn").forEach((v,i)=>{
-        v.classList.toggle("active",i===idx);
-    })
-    document.getElementById("cateBox").classList.toggle("hide",idx!==0);
-    document.getElementById("foodBox").classList.toggle("hide",idx!==1);
-    if(idx===0)loadCateAdmin();
-    if(idx===1){loadCateSelect();loadFoodAdmin();}
-}
+            let html = '';
+            data.forEach(order=>{
+                let typeText = {
+                    smallBamboo:'小筍餐',
+                    family:'全家餐',
+                    smallSet:'小套餐'
+                }[order.order_type] || '一般點餐';
 
-// 分類後台
-async function loadCateAdmin(){
-    const {data} = await supabase.from("food_category").select("*").order("sort");
-    let html = `<table><tr><th>名稱</th><th>排序</th><th>操作</th></tr>`;
-    data.forEach(item=>{
-        html += `
-        <tr>
-            <td>${item.name}</td>
-            <td>${item.sort}</td>
-            <td>
-                <button onclick="delCate(${item.id})">刪除</button>
-            </td>
-        </tr>`
-    })
-    html += `</table>`;
-    document.getElementById("cateTable").innerHTML = html;
-}
-async function addCategory(){
-    let name = document.getElementById("cateName").value.trim();
-    let sort = parseInt(document.getElementById("cateSort").value)||0;
-    if(!name)return alert("請輸入分類名稱");
-    await supabase.from("food_category").insert([{name,sort}]);
-    alert("新增成功");
-    loadCateAdmin();
-}
-async function delCate(id){
-    if(!confirm("確定刪除?"))return;
-    await supabase.from("food_category").delete().eq("id",id);
-    loadCateAdmin();
-}
+                let foodStr = order.select_food.map(item=>`${item.name} ${item.price}元`).join('、');
 
-// 菜品後台
-async function loadCateSelect(){
-    const {data} = await supabase.from("food_category").select("*").order("sort");
-    let html = "";
-    data.forEach(item=>html+=`<option value="${item.id}">${item.name}</option>`);
-    document.getElementById("selectCate").innerHTML = html;
-}
-async function loadFoodAdmin(){
-    const {data} = await supabase.from("food_product").select("*,food_category(name)").order("sort");
-    let html = `<table>
-    <tr>
-        <th>分類</th><th>名稱</th><th>價格</th><th>狀態</th><th>操作</th>
-    </tr>`;
-    data.forEach(item=>{
-        html += `
-        <tr>
-            <td>${item.food_category?.name||''}</td>
-            <td>${item.name}</td>
-            <td>$${item.price}</td>
-            <td>${item.status?"上架":"下架"}</td>
-            <td>
-                <button onclick="editFood(${item.id})">編輯</button>
-                <button onclick="changeStatus(${item.id},${!item.status})">上下架</button>
-                <button onclick="delFood(${item.id})">刪除</button>
-            </td>
-        </tr>`
-    })
-    html += `</table>`;
-    document.getElementById("foodTable").innerHTML = html;
-}
-async function saveFood(){
-    let cid = document.getElementById("selectCate").value;
-    let name = document.getElementById("foodName").value.trim();
-    let price = parseInt(document.getElementById("foodPrice").value);
-    let img = document.getElementById("foodImg").value.trim();
-    let desc = document.getElementById("foodDesc").value.trim();
-    let remark = document.getElementById("foodRemark").value.trim();
-    let eid = document.getElementById("editFoodId").value;
-    if(!name||!price)return alert("請填寫完整名稱與價格");
-    let post = {cate_id:cid,name,price,image_url:img,description:desc,remark};
-    if(eid){
-        await supabase.from("food_product").update(post).eq("id",eid);
-    }else{
-        await supabase.from("food_product").insert([post]);
-    }
-    alert("儲存成功");
-    clearFoodForm();
-    loadFoodAdmin();
-}
-function clearFoodForm(){
-    document.getElementById("foodName").value="";
-    document.getElementById("foodPrice").value="";
-    document.getElementById("foodImg").value="";
-    document.getElementById("foodDesc").value="";
-    document.getElementById("foodRemark").value="";
-    document.getElementById("editFoodId").value="";
-}
-async function editFood(id){
-    const {data} = await supabase.from("food_product").select("*").eq("id",id).single();
-    document.getElementById("editFoodId").value = id;
-    document.getElementById("selectCate").value = data.cate_id;
-    document.getElementById("foodName").value = data.name;
-    document.getElementById("foodPrice").value = data.price;
-    document.getElementById("foodImg").value = data.image_url||"";
-    document.getElementById("foodDesc").value = data.description||"";
-    document.getElementById("foodRemark").value = data.remark||"";
-}
-async function changeStatus(id,st){
-    await supabase.from("food_product").update({status:st}).eq("id",id);
-    loadFoodAdmin();
-}
-async function delFood(id){
-    if(!confirm("確定刪除菜品?"))return;
-    await supabase.from("food_product").delete().eq("id",id);
-    loadFoodAdmin();
-}
+                html += `
+                <div class="border rounded p-3 mb-3">
+                    <div class="font-bold">訂單編號：${order.order_no}｜套餐類型：${typeText}</div>
+                    <div class="mt-1">選購品項：${foodStr}</div>
+                    <div class="text-red-600 mt-1">額外補差價：${order.diff_price} 元｜訂單總金額：${order.total_price} 元</div>
+                </div>
+                `;
+            })
+            document.getElementById('orderBox').innerHTML = html || '<div style="text-align:center;padding:20px;">目前尚無任何訂單</div>';
+        }
 
-window.onload=()=>loadCateAdmin();
-</script>
+        // 初始化
+        getOrderList();
+        watchOrder();
+        // 5秒自動刷新
+        setInterval(getOrderList,5000);
+    </script>
 </body>
 </html>

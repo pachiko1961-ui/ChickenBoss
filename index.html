@@ -1,354 +1,251 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>雞老闆輕食料理 - 線上點餐</title>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<style>
-:root{
-    --main:#e63946;
-    --light:#fff5f5;
-    --dark:#2d3748;
-    --gray:#f3f4f6;
-}
-*{margin:0;padding:0;box-sizing:border-box;}
-body{background:#f3f4f6;font-family:Microsoft JhengHei,sans-serif;padding-bottom:80px;}
-.header{background:var(--main);color:#fff;text-align:center;padding:16px 0;box-shadow:0 2px 6px #0002;position:sticky;top:0;z-index:30;}
-.header h1{font-size:20px;font-weight:bold;}
-.header p{font-size:13px;opacity:0.9;margin-top:4px;}
-.tab-wrap{display:flex;overflow-x:auto;background:#fff;position:sticky;top:60px;z-index:20;box-shadow:0 1px 3px #0001;}
-.tab-item{white-space:nowrap;padding:12px 16px;font-size:14px;color:#666;cursor:pointer;}
-.tab-active{border-bottom:3px solid var(--main);color:var(--main);font-weight:bold;}
-.container{padding:12px;}
-.food-item{background:#fff;border-radius:12px;padding:12px;margin-bottom:12px;display:flex;box-shadow:0 1px 4px #0001;}
-.food-item:active{transform:scale(0.98);transition:0.2s;}
-.food-img{width:80px;height:80px;border-radius:8px;object-fit:cover;}
-.food-info{flex:1;margin-left:12px;}
-.food-name{font-weight:bold;font-size:15px;}
-.food-price{color:var(--main);font-weight:bold;margin:4px 0;}
-.food-desc{font-size:12px;color:#999;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.food-remark{font-size:11px;color:#888;margin-top:2px;}
-.add-btn{align-self:center;font-size:22px;color:var(--main);cursor:pointer;}
-.modal{position:fixed;inset:0;background:rgba(0,0,0.6);z-index:50;display:none;align-items:center;justify-content:center;padding:16px;}
-.modal-box{background:#fff;border-radius:12px;width:100%;max-width:360px;overflow:hidden;animation:fadeIn 0.2s;}
-@keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
-.cart-modal{align-items:flex-end;}
-.cart-content{background:#fff;width:100%;border-radius:20px 20px 0 0;padding:16px;max-height:70vh;overflow-y:auto;}
-.taste-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0;}
-.taste-label{border:1px solid #ddd;border-radius:8px;padding:12px;text-align:center;cursor:pointer;}
-.btn{padding:10px;border-radius:8px;border:none;cursor:pointer;font-size:14px;}
-.btn-gray{border:1px solid #ddd;background:#fff;}
-.btn-red{background:var(--main);color:#fff;}
-.btn-green{background:#28a745;color:#fff;}
-.cart-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid #eee;}
-.cart-img{width:56px;height:56px;border-radius:6px;object-fit:cover;}
-.num-btn{width:26px;height:26px;border:1px solid #ccc;border-radius:4px;text-align:center;line-height:26px;display:inline-block;cursor:pointer;}
-.footer-cart{position:fixed;bottom:0;left:0;width:100%;background:#fff;border-top:1px solid #eee;display:flex;align-items:center;justify-content:space-between;padding:12px 16px;z-index:40;}
-.cart-badge{color:var(--main);font-weight:bold;}
-.go-cart{background:var(--main);color:#fff;padding:8px 20px;border-radius:20px;font-size:14px;}
-.order-textarea{
-    width:100%;
-    height:160px;
-    border:1px solid #ddd;
-    border-radius:8px;
-    padding:10px;
-    font-size:13px;
-    white-space:pre-wrap;
-    resize:none;
-    margin:10px 0;
-}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>雞老闆輕食料理 - 線上點餐</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        *{box-sizing:border-box;}
+        body{background-color:#fef3c7;font-family:system-ui,sans-serif;margin:0;padding:0;}
+        .max-w-5xl{max-width:1200px;margin:0 auto;padding:1rem;}
+        .bg-orange-600{background-color:#ea580c;}
+        .text-white{color:#fff;}
+        .rounded-xl{border-radius:1rem;}
+        .p-4{padding:1rem;}
+        .mb-4{margin-bottom:1rem;}
+        .text-center{text-align:center;}
+        .text-2xl{font-size:1.5rem;}
+        .font-bold{font-weight:bold;}
+        .bg-white{background:#fff;}
+        .shadow{box-shadow:0 2px 8px #00000015;}
+        .grid{display:grid;}
+        .grid-cols-3{grid-template-columns:repeat(3,1fr);}
+        .gap-3{gap:0.75rem;}
+        .border{border:1px solid #ddd;}
+        .rounded-lg{border-radius:0.5rem;}
+        .p-3{padding:0.75rem;}
+        .cursor-pointer{cursor:pointer;}
+        .text-sm{font-size:0.875rem;}
+        .text-gray-500{color:#6b7280;}
+        .text-red-500{color:#ef4444;}
+        .text-red-600{color:#dc2626;}
+        .text-blue-600{color:#2563eb;}
+        .bg-blue-100{background:#dbeafe;}
+        .hidden{display:none;}
+        .meal-active{border:2px solid #f59e0b;background:#fffbeb;}
+        .food-item:hover{transform:scale(1.03);transition:0.2s;}
+        .bg-red-50{background:#fef2f2;}
+        .text-green-600{color:#16a34a;}
+        .flex{display:flex;}
+        .gap-3{gap:0.75rem;}
+        .flex-1{flex:1;}
+        .py-3{padding:0.75rem 0;}
+        .bg-gray-400{background:#9ca3af;}
+        .justify-between{justify-content:space-between;}
+        @media (max-width:768px){
+            .grid-cols-3{grid-template-columns:1fr;}
+            .grid-cols-4{grid-template-columns:repeat(2,1fr);}
+        }
+        .grid-cols-4{grid-template-columns:repeat(4,1fr);}
+    </style>
 </head>
 <body>
-<div class="header">
-    <h1>雞老闆輕食料理</h1>
-    <p>掃碼快速點餐 · 新鮮現做</p>
-</div>
-
-<div class="tab-wrap" id="cateTab"></div>
-<div class="container" id="foodList"></div>
-
-<div class="footer-cart">
-    <div>
-        <i class="fa fa-shopping-cart" style="font-size:18px;color:var(--main);"></i>
-        <span style="margin-left:6px;">共 <span id="cartNum" class="cart-badge">0</span> 項</span>
-    </div>
-    <button class="go-cart" onclick="openCart()">查看購物車</button>
-</div>
-
-<!-- 菜品詳情彈窗 -->
-<div id="foodModal" class="modal">
-    <div class="modal-box">
-        <img id="modalImg" src="" style="width:100%;height:190px;object-fit:cover;">
-        <div style="padding:16px;">
-            <h2 id="modalName" style="font-size:17px;font-weight:bold;"></h2>
-            <p id="modalPrice" style="color:var(--main);font-weight:bold;margin:6px 0;"></p>
-            <p id="modalRemark" style="font-size:13px;color:#777;margin:4px 0;"></p>
-            <p id="modalDesc" style="color:#666;font-size:14px;line-height:1.6;"></p>
-            <div style="display:flex;gap:10px;margin-top:20px;">
-                <button class="btn btn-gray" onclick="closeFoodModal()">關閉</button>
-                <button class="btn btn-red" onclick="addCartFromModal()">加入購物車</button>
-            </div>
+    <div class="max-w-5xl">
+        <!-- 店家資訊 -->
+        <div class="bg-orange-600 text-white rounded-xl p-4 mb-4 text-center">
+            <h1 class="text-2xl font-bold">雞老闆輕食料理(鹹水雞 & 蔬菜)</h1>
+            <p class="mt-1">訂購專線：0989-170-661 | 地址：三民街161號</p>
         </div>
-    </div>
-</div>
 
-<!-- 結帳全域口味彈窗 -->
-<div id="globalTasteModal" class="modal">
-    <div class="modal-box" style="padding:20px;">
-        <h3 style="font-size:16px;font-weight:bold;">選擇整單統一口味</h3>
-        <p style="font-size:12px;color:#777;margin:6px 0;">所有餐點將使用相同口味</p>
-        <div class="taste-grid">
-            <label class="taste-label"><input type="radio" name="globalTaste" value="原味" checked> 原味</label>
-            <label class="taste-label"><input type="radio" name="globalTaste" value="蒜味"> 蒜味</label>
-            <label class="taste-label"><input type="radio" name="globalTaste" value="椒麻"> 椒麻</label>
-            <label class="taste-label"><input type="radio" name="globalTaste" value="泰式"> 泰式</label>
-            <label class="taste-label" style="grid-column:1/3;"><input type="radio" name="globalTaste" value="檸檬"> 檸檬</label>
-        </div>
-        <div style="display:flex;gap:10px;margin-top:10px;">
-            <button class="btn btn-gray" onclick="closeGlobalTaste()">返回購物車</button>
-            <button class="btn btn-red" onclick="showOrderList()">確認產生訂單</button>
-        </div>
-    </div>
-</div>
-
-<!-- 完整訂單清單 + 複製按鈕彈窗 -->
-<div id="orderModal" class="modal">
-    <div class="modal-box" style="padding:20px;max-width:400px;">
-        <h3 style="font-size:16px;font-weight:bold;text-align:center;">✅ 訂單明細</h3>
-        <textarea id="orderText" class="order-textarea" readonly></textarea>
-        <div style="display:flex;gap:10px;">
-            <button class="btn btn-green" style="flex:1;" onclick="copyOrderText()">複製訂單</button>
-            <button class="btn btn-gray" style="flex:1;" onclick="closeOrderModal()">關閉</button>
-        </div>
-    </div>
-</div>
-
-<!-- 購物車彈窗 -->
-<div id="cartModal" class="modal cart-modal">
-    <div class="cart-content">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;">
-            <h3 style="font-size:16px;font-weight:bold;">我的餐點</h3>
-            <i class="fa fa-times" style="font-size:18px;cursor:pointer;" onclick="closeCart()"></i>
-        </div>
-        <div id="cartList"></div>
-        <div style="border-top:1px solid #eee;padding-top:15px;margin-top:15px;">
-            <div style="display:flex;justify-content:space-between;margin-bottom:15px;">
-                <span>總金額</span>
-                <span id="totalPrice" style="font-size:17px;color:var(--main);font-weight:bold;">$0</span>
-            </div>
-            <button class="btn btn-red" style="width:100%;padding:12px;" onclick="openGlobalTaste()">立即結帳</button>
-        </div>
-    </div>
-</div>
-
-<script>
-// ========== 填入你的 Supabase 資訊 ==========
-const SUPABASE_URL = "https://zexwhzgxunfnbschkizq.supabase.co";
-const SUPABASE_KEY = "sb_publishable_OPftLOAUJFzwKZ8eK7GIXg_2LEEMMwn";
-// ===========================================
-const sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-let cateList = [];
-let foodList = [];
-let nowCateId = 1;
-let nowFood = null;
-let cart = [];
-let currentTaste = "";
-
-// 載入分類
-async function loadCategory(){
-    const {data} = await sbClient.from("food_category").select("*").order("sort");
-    cateList = data;
-    let html = "";
-    data.forEach((item,idx)=>{
-        html += `<div class="tab-item ${idx===0?'tab-active':''}" data-cid="${item.id}" onclick="switchCate(${item.id},this)">${item.name}</div>`;
-    })
-    document.getElementById("cateTab").innerHTML = html;
-    if(data.length>0) loadFood(data[0].id);
-}
-function switchCate(cid,dom){
-    document.querySelectorAll(".tab-item").forEach(t=>t.classList.remove("tab-active"));
-    dom.classList.add("tab-active");
-    nowCateId = cid;
-    loadFood(cid);
-}
-// 載入菜品
-async function loadFood(cateId){
-    const {data} = await sbClient
-        .from("food_product")
-        .select("*")
-        .eq("cate_id",cateId)
-        .eq("status",true)
-        .order("sort");
-    foodList = data;
-    let html = "";
-    data.forEach(f=>{
-        html += `
-        <div class="food-item" onclick="openFoodDetail(${f.id})">
-            <img src="${f.image_url||'https://picsum.photos/400/300'}" class="food-img">
-            <div class="food-info">
-                <div class="food-name">${f.name}</div>
-                <div class="food-price">$${f.price}</div>
-                <div class="food-desc">${f.description||''}</div>
-                <div class="food-remark">備註：${f.remark||'無'}</div>
-            </div>
-            <div class="add-btn" onclick="event.stopPropagation();addCartDirect(${f.id})">
-                <i class="fa fa-plus-circle"></i>
-            </div>
-        </div>
-        `
-    })
-    document.getElementById("foodList").innerHTML = html;
-}
-// 開菜品詳細彈窗
-function openFoodDetail(fid){
-    let food = foodList.find(v=>v.id===fid);
-    nowFood = food;
-    document.getElementById("modalImg").src = food.image_url||'https://picsum.photos/400/300';
-    document.getElementById("modalName").innerText = food.name;
-    document.getElementById("modalPrice").innerText = "售價：$"+food.price;
-    document.getElementById("modalRemark").innerText = "備註："+(food.remark||"無");
-    document.getElementById("modalDesc").innerText = food.description||"無介紹";
-    document.getElementById("foodModal").style.display = "flex";
-}
-function closeFoodModal(){
-    document.getElementById("foodModal").style.display = "none";
-}
-// 直接加入購物車
-function addCartDirect(fid){
-    let food = foodList.find(v=>v.id===fid);
-    let exist = cart.find(item=>item.id === food.id);
-    if(exist){
-        exist.num += 1;
-    }else{
-        cart.push({
-            id:food.id,
-            name:food.name,
-            price:food.price,
-            num:1,
-            img:food.image_url
-        })
-    }
-    updateCartNum();
-    alert(`已加入【${food.name}】，結帳時統一選擇整單口味`);
-}
-// 詳情頁加入購物車
-function addCartFromModal(){
-    closeFoodModal();
-    addCartDirect(nowFood.id);
-}
-// 更新購物車數量
-function updateCartNum(){
-    let total = cart.reduce((sum,item)=>sum + item.num,0);
-    document.getElementById("cartNum").innerText = total;
-}
-// 開購物車
-function openCart(){
-    let html = "";
-    let totalMoney = 0;
-    if(cart.length <= 0){
-        html = '<p style="text-align:center;color:#999;padding:40px 0;">購物車尚無餐點，請先加購商品</p>';
-    }else{
-        cart.forEach((item,idx)=>{
-            totalMoney += item.price * item.num;
-            html += `
-            <div class="cart-row">
-                <img src="${item.img||'https://picsum.photos/400/300'}" class="cart-img">
-                <div style="flex:1;">
-                    <p>${item.name}</p>
-                    <p style="color:var(--main);">$${item.price}</p>
+        <!-- 套餐選擇 -->
+        <div class="bg-white rounded-xl p-4 shadow mb-4">
+            <h2 class="font-bold text-lg mb-3">🍱 選擇套餐</h2>
+            <div class="grid grid-cols-3 gap-3">
+                <div class="meal-item border rounded-lg p-3 cursor-pointer text-center" data-type="smallBamboo" data-num="0" data-price="125">
+                    <div class="font-semibold">小筍餐</div>
+                    <div class="text-sm text-gray-500">半雞+脆筍1份</div>
+                    <div class="text-red-500 font-bold">$125</div>
                 </div>
-                <div>
-                    <span class="num-btn" onclick="cartMinus(${idx})">-</span>
-                    <span style="margin:0 8px;">${item.num}</span>
-                    <span class="num-btn" onclick="cartPlus(${idx})">+</span>
+                <div class="meal-item border rounded-lg p-3 cursor-pointer text-center" data-type="family" data-num="7" data-price="300">
+                    <div class="font-semibold">全家餐</div>
+                    <div class="text-sm text-gray-500">全雞+任選7種小菜</div>
+                    <div class="text-red-500 font-bold">$300</div>
+                </div>
+                <div class="meal-item border rounded-lg p-3 cursor-pointer text-center" data-type="smallSet" data-num="4" data-price="175">
+                    <div class="font-semibold">小套餐</div>
+                    <div class="text-sm text-gray-500">全雞+任選4種小菜</div>
+                    <div class="text-red-500 font-bold">$175</div>
                 </div>
             </div>
-            `
-        })
-    }
-    document.getElementById("cartList").innerHTML = html;
-    document.getElementById("totalPrice").innerText = "$" + totalMoney;
-    document.getElementById("cartModal").style.display = "flex";
-}
-function closeCart(){
-    document.getElementById("cartModal").style.display = "none";
-}
-// 數量增減
-function cartPlus(idx){
-    cart[idx].num++;
-    openCart();
-    updateCartNum();
-}
-function cartMinus(idx){
-    if(cart[idx].num <= 1){
-        cart.splice(idx,1);
-    }else{
-        cart[idx].num--;
-    }
-    openCart();
-    updateCartNum();
-}
-// 開口味選擇彈窗
-function openGlobalTaste(){
-    if(cart.length === 0){
-        alert("購物車沒有商品，無法結帳");
-        return;
-    }
-    closeCart();
-    document.getElementById("globalTasteModal").style.display = "flex";
-}
-function closeGlobalTaste(){
-    document.getElementById("globalTasteModal").style.display = "none";
-}
-// 產生完整訂單文字並彈窗
-function showOrderList(){
-    currentTaste = document.querySelector('input[name="globalTaste"]:checked').value;
-    closeGlobalTaste();
+            <p class="text-sm text-red-600 mt-2">⚠️ 限點20元以內小菜，超過20元需補差價</p>
+        </div>
 
-    let totalAll = 0;
-    let orderStr = "================\n";
-    orderStr += " 雞老闆輕食料理\n";
-    orderStr += "================\n";
-    orderStr += `統一整單口味：${currentTaste}\n\n`;
-    orderStr += "餐點清單：\n";
+        <!-- 選品提示 -->
+        <div id="tipBox" class="hidden bg-blue-100 rounded p-3 mb-4">
+            <span id="tipText"></span>
+            <button onclick="closeTip()" class="ml-3 text-blue-600">關閉</button>
+        </div>
 
-    cart.forEach(item=>{
-        let sub = item.price * item.num;
-        totalAll += sub;
-        orderStr += `• ${item.name}  x${item.num}  $${item.price}  小計$${sub}\n`;
-    })
+        <!-- 商品分類選單 -->
+        <div class="bg-white rounded-xl p-4 shadow mb-4">
+            <h2 class="font-bold text-lg mb-3">🥬 挑選食材</h2>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3" id="foodList"></div>
+        </div>
 
-    orderStr += `\n================\n`;
-    orderStr += `訂單總金額：$${totalAll}\n`;
-    orderStr += `================`;
+        <!-- 已選清單 -->
+        <div class="bg-white rounded-xl p-4 shadow mb-4">
+            <h2 class="font-bold text-lg mb-3">🛒 已選菜品</h2>
+            <div id="selectList" class="mb-3 text-sm"></div>
+            <div class="flex justify-between font-bold">
+                <span>套餐金額：<span id="mealPrice">0</span> 元</span>
+                <span>補差價總計：<span id="diffPrice">0</span> 元</span>
+                <span class="text-red-600">應付總金額：<span id="allPrice">0</span> 元</span>
+            </div>
+        </div>
 
-    // 填入文字框
-    document.getElementById("orderText").value = orderStr;
-    document.getElementById("orderModal").style.display = "flex";
-}
-// 複製訂單到剪貼簿
-async function copyOrderText(){
-    const text = document.getElementById("orderText").value;
-    try {
-        await navigator.clipboard.writeText(text);
-        alert("✅ 訂單已複製到剪貼簿！可貼至LINE/備忘錄");
-    } catch(err) {
-        alert("❌ 複製失敗，請手動選取文字複製");
-    }
-}
-function closeOrderModal(){
-    document.getElementById("orderModal").style.display = "none";
-    // 清空購物車（可保留不清除，依需求刪除這兩行）
-    cart = [];
-    updateCartNum();
-}
+        <!-- 結帳按鈕 -->
+        <div class="flex gap-3">
+            <button onclick="clearSelect()" class="flex-1 bg-gray-400 text-white py-3 rounded-xl">清空選擇</button>
+            <button onclick="submitOrder()" class="flex-1 bg-orange-600 text-white py-3 rounded-xl font-bold">確認結帳送出訂單</button>
+        </div>
+    </div>
 
-window.onload=()=>{
-    loadCategory();
-}
-</script>
+    <script>
+        // Supabase 設定
+        const SUPABASE_URL = "https://zexwhzgxunfnbschkizq.supabase.co";
+        const SUPABASE_KEY = "sb_publishable_OPftLOAUJFzwKZ8eK7GIXg_2LEEMMwn";
+        const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        let selectMeal = null;
+        let needSelectNum = 0;
+        let selectFoodArr = [];
+        let baseMealPrice = 0;
+        let totalDiff = 0;
+
+        // 關閉提示
+        function closeTip(){
+            document.getElementById('tipBox').classList.add('hidden');
+        }
+
+        // 清空選擇
+        function clearSelect(){
+            selectFoodArr = [];
+            selectMeal = null;
+            needSelectNum = 0;
+            baseMealPrice = 0;
+            document.querySelectorAll('.meal-item').forEach(i=>i.classList.remove('meal-active'));
+            calcPrice();
+            renderSelectList();
+            closeTip();
+        }
+
+        // 套餐選擇
+        document.querySelectorAll('.meal-item').forEach(item=>{
+            item.addEventListener('click',()=>{
+                document.querySelectorAll('.meal-item').forEach(i=>i.classList.remove('meal-active'));
+                item.classList.add('meal-active');
+                selectMeal = item.dataset.type;
+                needSelectNum = parseInt(item.dataset.num);
+                baseMealPrice = parseInt(item.dataset.price);
+                selectFoodArr = [];
+                calcPrice();
+                renderSelectList();
+                if(needSelectNum > 0){
+                    document.getElementById('tipBox').classList.remove('hidden');
+                    document.getElementById('tipText').innerText=`請再選 ${needSelectNum} 樣小菜完成點餐`;
+                }else{
+                    closeTip();
+                }
+            })
+        });
+
+        // 載入商品
+        async function loadFood(){
+            const {data} = await client.from('food_product').select('*');
+            const box = document.getElementById('foodList');
+            box.innerHTML = '';
+            data.forEach(food=>{
+                let isOver = food.price > 20;
+                let html = `
+                <div class="food-item border rounded p-2 cursor-pointer ${isOver?'bg-red-50':''}" onclick="chooseFood(${food.id},'${food.name}',${food.price})">
+                    <div>${food.name}</div>
+                    <div class="text-sm ${isOver?'text-red-500':'text-green-600'}">${food.price}元 ${isOver?'(補差價)':''}</div>
+                </div>
+                `;
+                box.innerHTML += html;
+            })
+        }
+
+        // 選擇食材
+        function chooseFood(id,name,price){
+            if(!selectMeal){alert('請先選擇套餐');return;}
+            if(needSelectNum>0 && selectFoodArr.length >= needSelectNum){
+                alert(`此套餐僅可選${needSelectNum}樣小菜`);
+                return;
+            }
+            let exist = selectFoodArr.find(item=>item.id===id);
+            if(exist) return;
+            selectFoodArr.push({id,name,price});
+            calcPrice();
+            renderSelectList();
+        }
+
+        // 計算金額與差價
+        function calcPrice(){
+            totalDiff = 0;
+            selectFoodArr.forEach(item=>{
+                if(item.price>20) totalDiff += (item.price-20);
+            })
+            let all = baseMealPrice + totalDiff;
+            document.getElementById('mealPrice').innerText = baseMealPrice;
+            document.getElementById('diffPrice').innerText = totalDiff;
+            document.getElementById('allPrice').innerText = all;
+        }
+
+        // 渲染已選清單
+        function renderSelectList(){
+            let html = '';
+            selectFoodArr.forEach((item,idx)=>{
+                let diff = item.price>20 ? `(補${item.price-20}元)`:'';
+                html += `<div>${idx+1}. ${item.name} ${item.price}元 ${diff} <button onclick="delFood(${item.id})" style="color:#ef4444;border:none;background:none;cursor:pointer;">移除</button></div>`;
+            })
+            document.getElementById('selectList').innerHTML = html || '尚未選擇食材';
+        }
+
+        // 移除食材
+        function delFood(id){
+            selectFoodArr = selectFoodArr.filter(item=>item.id!==id);
+            calcPrice();
+            renderSelectList();
+        }
+
+        // 提交訂單
+        async function submitOrder(){
+            if(!selectMeal){alert('請選擇套餐');return;}
+            if(needSelectNum>0 && selectFoodArr.length < needSelectNum){
+                alert(`還需再選${needSelectNum-selectFoodArr.length}樣小菜`);
+                return;
+            }
+            let orderNo = 'ORD'+new Date().getTime();
+            const {error} = await client.from('order_list').insert([{
+                order_no:orderNo,
+                order_type:selectMeal,
+                select_food:selectFoodArr,
+                total_price:baseMealPrice+totalDiff,
+                diff_price:totalDiff
+            }])
+            if(error){
+                alert('訂單送出失敗');
+                console.log(error);
+            }else{
+                alert('訂單已送出，店家已收到！');
+                clearSelect();
+            }
+        }
+
+        // 初始化載入
+        loadFood();
+    </script>
 </body>
 </html>
