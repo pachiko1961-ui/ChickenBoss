@@ -22,6 +22,10 @@
         .mb-3{margin-bottom:0.75rem;}
         .mt-1{margin-top:0.25rem;}
         .text-red-600{color:#dc2626;}
+        .text-green-600{color:#16a34a;}
+        .text-gray-500{color:#6b7280;font-size:0.9rem;}
+        .flavor-info{background:#fef3c7;padding:0.5rem;border-radius:0.5rem;margin:0.5rem 0;}
+        .order-item{border-left:4px solid #ea580c;padding-left:0.5rem;margin:0.25rem 0;}
     </style>
 </head>
 <body>
@@ -33,12 +37,29 @@
         </div>
     </div>
 
+    <!-- 提示音音頻元素 -->
+    <audio id="notificationSound" preload="auto">
+        <source src="https://assets.mixkit.co/sfx/preview/mixkit-software-interface-start-2574.mp3" type="audio/mpeg">
+    </audio>
+
     <script>
         // 正確填入你的專案網址 + ANON 匿名金鑰
         const SUPABASE_URL = "https://zexwhzgxunfnbschkizq.supabase.co";
-        // 這裡一定要換成 ANON PUBLIC 金鑰，不是 sb_publishable 開頭
         const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpleHdoemd4dW5mbmJzY2hraXpxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4MzE1MjksImV4cCI6MjA5NzQwNzUyOX0.X-sd8FcJ2AjLq9Ty_KWvjwfJCc2P4IItjRyxSu2vgiU";
         const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        // 播放提示音
+        function playNotificationSound() {
+            const sound = document.getElementById('notificationSound');
+            sound.currentTime = 0; // 重置播放位置
+            sound.play().catch(err => {
+                console.log('播放提示音失敗:', err);
+                // 備用提示：如果音頻無法播放，彈出震動提示
+                if (navigator.vibrate) {
+                    navigator.vibrate([200, 100, 200]);
+                }
+            });
+        }
 
         // 實時監聽新訂單
         function watchOrder(){
@@ -47,7 +68,8 @@
                 event:'INSERT',
                 schema:'public',
                 table:'order_list'
-            },()=>{
+            },(payload)=>{
+                playNotificationSound(); // 播放提示音
                 alert('🔔 有新訂單進來了！');
                 getOrderList();
             }).subscribe()
@@ -66,24 +88,68 @@
             }
 
             let html = '';
-            data.forEach(order=>{
-                let typeText = {
-                    smallBamboo:'小筍餐',
-                    family:'全家餐',
-                    smallSet:'小套餐'
-                }[order.order_type] || '一般點餐';
+            if (data.length === 0) {
+                html = '<div style="text-align:center;padding:20px;color:#6b7280;">目前尚無任何訂單</div>';
+            } else {
+                data.forEach(order=>{
+                    // 訂單類型文字對應
+                    let typeText = {
+                        smallBamboo:'小筍餐',
+                        family:'全家餐',
+                        smallSet:'小套餐'
+                    }[order.order_type] || '一般點餐';
 
-                let foodStr = order.select_food.map(item=>`${item.name} ${item.price}元`).join('、');
+                    // 組裝菜品清單（含補差價標示）
+                    let foodList = '';
+                    order.select_food.forEach((item, idx) => {
+                        let diffTxt = '';
+                        if (['smallBamboo','family','smallSet'].includes(order.order_type) && item.price > 20) {
+                            diffTxt = ` (補${item.price - 20}元)`;
+                        }
+                        foodList += `<div class="order-item">${idx+1}. ${item.name} ${item.price}元${diffTxt}</div>`;
+                    });
 
-                html += `
-                <div class="border rounded p-3 mb-3">
-                    <div class="font-bold">訂單編號：${order.order_no}｜套餐類型：${typeText}</div>
-                    <div class="mt-1">選購品項：${foodStr}</div>
-                    <div class="text-red-600 mt-1">額外補差價：${order.diff_price} 元｜訂單總金額：${order.total_price} 元</div>
-                </div>
-                `;
-            })
-            document.getElementById('orderBox').innerHTML = html || '<div style="text-align:center;padding:20px;">目前尚無任何訂單</div>';
+                    // 口味資訊處理
+                    const flavorInfo = order.flavor_info || {};
+                    const toppings = flavorInfo.toppings && flavorInfo.toppings.length > 0 
+                        ? flavorInfo.toppings.join('、') 
+                        : '無';
+                    
+                    // 金額明細
+                    const mealPrice = ['smallBamboo','family','smallSet'].includes(order.order_type) 
+                        ? order.total_price - order.diff_price - (order.flavor_price || 0) 
+                        : 0;
+
+                    html += `
+                    <div class="border rounded p-4 mb-3 shadow-sm">
+                        <div class="flex justify-between items-center mb-2">
+                            <div class="font-bold text-lg">訂單編號：${order.order_no}</div>
+                            <div class="text-gray-500">${order.create_time}</div>
+                        </div>
+                        <div class="mt-1"><strong>訂單類型：</strong>${typeText}</div>
+                        <div class="mt-1"><strong>手機末3碼：</strong>${order.phone_last3 || '未填寫'}</div>
+                        
+                        <div class="mt-2"><strong>選購品項：</strong></div>
+                        <div style="margin-left:1rem;">${foodList}</div>
+                        
+                        <div class="flavor-info mt-2">
+                            <div><strong>口味設定：</strong>${flavorInfo.flavor || '原味'}</div>
+                            <div><strong>鹹度：</strong>${flavorInfo.salt || '正常'}</div>
+                            <div><strong>配料：</strong>${toppings}</div>
+                            <div><strong>辣度：</strong>${flavorInfo.spicy || '不辣'}</div>
+                        </div>
+                        
+                        <div class="mt-2">
+                            <div><strong>套餐金額：</strong>${mealPrice} 元</div>
+                            <div><strong>小菜補差價：</strong>${order.diff_price} 元</div>
+                            <div><strong>口味加價：</strong>${order.flavor_price || 0} 元</div>
+                            <div class="text-red-600 font-bold mt-1">應付總金額：${order.total_price} 元</div>
+                        </div>
+                    </div>
+                    `;
+                });
+            }
+            document.getElementById('orderBox').innerHTML = html;
         }
 
         // 初始化
