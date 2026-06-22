@@ -20,7 +20,6 @@
         .bg-white{background:#fff;}
         .shadow{box-shadow:0 2px 8px #00000015;}
         .grid{display:grid;}
-        .grid-cols-3{grid-template-columns:repeat(3,1fr);}
         .gap-3{gap:0.75rem;}
         .border{border:1px solid #ddd;}
         .rounded-lg{border-radius:0.5rem;}
@@ -34,7 +33,6 @@
         .bg-blue-100{background:#dbeafe;}
         .hidden{display:none;}
         .meal-active{border:2px solid #f59e0b;background:#fffbeb;}
-        .food-item:hover{transform:scale(1.03);transition:0.2s;}
         .bg-red-50{background:#fef2f2;}
         .text-green-600{color:#16a34a;}
         .flex{display:flex;}
@@ -45,13 +43,57 @@
         .justify-between{justify-content:space-between;}
         @media (max-width:768px){
             .grid-cols-3{grid-template-columns:1fr;}
-            .grid-cols-4{grid-template-columns:repeat(2,1fr);}
-            /* 手機版單點菜品改為2列 */
-            .single-food-grid{grid-template-columns:repeat(2,1fr)!important;}
+            .food-grid{grid-template-columns:repeat(2,1fr)!important;}
         }
-        .grid-cols-4{grid-template-columns:repeat(4,1fr);}
-        
-        /* 新增：彈窗提示樣式 */
+        /* 通用食材網格 套餐+單點共用 */
+        .food-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+        /* 分類標題通用 */
+        .category-title {
+            font-weight: bold;
+            margin: 1rem 0 0.5rem;
+            color: #ea580c;
+            font-size: 1rem;
+        }
+        /* 套餐食材按鈕 */
+        .meal-food-item {
+            padding: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-size: 0.82rem;
+        }
+        .meal-food-item:hover {
+            background: #fffbeb;
+            border-color: #f59e0b;
+        }
+        .meal-food-price {
+            font-size: 0.72rem;
+            margin-top: 0.2rem;
+        }
+        /* 單點食材按鈕 */
+        .single-food-item {
+            padding: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            background: #fff;
+            font-size: 0.82rem;
+        }
+        .single-food-item:hover {
+            background: #fffbeb;
+            border-color: #f59e0b;
+        }
+        .single-food-price {
+            color: #16a34a;
+            font-size: 0.72rem;
+            margin-top: 0.2rem;
+        }
+        /* Toast彈窗 */
         .toast {
             position: fixed;
             top: 20px;
@@ -65,11 +107,8 @@
             opacity: 0;
             transition: opacity 0.3s ease;
         }
-        .toast.show {
-            opacity: 1;
-        }
-
-        /* 新增：點餐類型切換按鈕 */
+        .toast.show { opacity: 1; }
+        /* 點餐切換按鈕 */
         .order-type-btn {
             padding: 8px 16px;
             border: 1px solid #ddd;
@@ -83,37 +122,6 @@
             color: white;
             border-color: #ea580c;
         }
-
-        /* 新增：單點菜品樣式 */
-        .single-food-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 0.75rem;
-            margin-bottom: 1.5rem;
-        }
-        .category-title {
-            font-weight: bold;
-            margin: 1rem 0 0.5rem 0;
-            color: #ea580c;
-            font-size: 1rem;
-        }
-        .single-food-item {
-            padding: 0.5rem;
-            border: 1px solid #ddd;
-            border-radius: 0.5rem;
-            cursor: pointer;
-            background: #fff;
-            font-size: 0.875rem; /* 縮小菜品按鈕文字 */
-        }
-        .single-food-item:hover {
-            background: #fffbeb;
-            border-color: #f59e0b;
-        }
-        .single-food-price {
-            color: #16a34a;
-            font-size: 0.75rem; /* 縮小價格文字 */
-            margin-top: 0.25rem;
-        }
     </style>
 </head>
 <body>
@@ -124,7 +132,7 @@
             <p class="mt-1">訂購專線：0989-170-661 | 地址：三民街161號</p>
         </div>
 
-        <!-- 新增：點餐類型切換 -->
+        <!-- 點餐類型切換 -->
         <div class="bg-white rounded-xl p-4 shadow mb-4">
             <h2 class="font-bold text-lg mb-3">📋 點餐類型</h2>
             <div>
@@ -133,7 +141,7 @@
             </div>
         </div>
 
-        <!-- 套餐選擇 (預設顯示) -->
+        <!-- 套餐選擇區 -->
         <div id="mealSection" class="bg-white rounded-xl p-4 shadow mb-4">
             <h2 class="font-bold text-lg mb-3">🍱 選擇套餐</h2>
             <div class="grid grid-cols-3 gap-3">
@@ -156,24 +164,23 @@
             <p class="text-sm text-red-600 mt-2">⚠️ 限點20元以內小菜，超過20元需補差價</p>
         </div>
 
-        <!-- 新增：單點區域 (預設隱藏) -->
+        <!-- 單點頁面 -->
         <div id="singleSection" class="bg-white rounded-xl p-4 shadow mb-4 hidden">
             <h2 class="font-bold text-lg mb-3">🍴 單點選項</h2>
-            <p class="text-sm text-gray-500 mb-3">可自由選擇多種食材，無數量限制</p>
-            <!-- 單點菜品容器 (動態生成) -->
+            <p class="text-sm text-gray-500 mb-3">自由選購，無數量限制</p>
             <div id="singleFoodContainer"></div>
         </div>
 
-        <!-- 選品提示 -->
+        <!-- 套餐食材區 (已改為分類排版) -->
+        <div id="mealFoodSection" class="bg-white rounded-xl p-4 shadow mb-4">
+            <h2 class="font-bold text-lg mb-3">🥬 挑選食材</h2>
+            <div id="mealFoodContainer"></div>
+        </div>
+
+        <!-- 套餐選品提示 -->
         <div id="tipBox" class="hidden bg-blue-100 rounded p-3 mb-4">
             <span id="tipText"></span>
             <button onclick="closeTip()" class="ml-3 text-blue-600">關閉</button>
-        </div>
-
-        <!-- 商品分類選單 (套餐模式用) -->
-        <div id="mealFoodSection" class="bg-white rounded-xl p-4 shadow mb-4">
-            <h2 class="font-bold text-lg mb-3">🥬 挑選食材</h2>
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-3" id="foodList"></div>
         </div>
 
         <!-- 已選清單 -->
@@ -187,18 +194,17 @@
             </div>
         </div>
 
-        <!-- 結帳按鈕 -->
+        <!-- 底部按鈕 -->
         <div class="flex gap-3">
             <button onclick="clearSelect()" class="flex-1 bg-gray-400 text-white py-3 rounded-xl">清空選擇</button>
             <button onclick="submitOrder()" class="flex-1 bg-orange-600 text-white py-3 rounded-xl font-bold">確認結帳送出訂單</button>
         </div>
     </div>
 
-    <!-- 新增：彈窗提示容器 -->
+    <!-- 加入購物車彈窗 -->
     <div id="toast" class="toast">已加入購物車</div>
 
     <script>
-        // Supabase 設定
         const SUPABASE_URL = "https://zexwhzgxunfnbschkizq.supabase.co";
         const SUPABASE_KEY = "sb_publishable_OPftLOAUJFzwKZ8eK7GIXg_2LEEMMwn";
         const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -208,286 +214,242 @@
         let selectFoodArr = [];
         let baseMealPrice = 0;
         let totalDiff = 0;
-        // 新增：當前點餐類型 (meal=套餐, single=單點)
         let currentOrderType = 'meal';
-        // 儲存所有菜品資料 (含分類)
-        let allFoodData = [];
 
-        // 新增：彈窗提示函數
-        function showToast(message = '已加入購物車') {
-            const toast = document.getElementById('toast');
-            toast.textContent = message;
-            toast.classList.add('show');
-            setTimeout(() => {
-                toast.classList.remove('show');
-            }, 1000); // 1秒後自動關閉
+        // 全域資料
+        let categoryList = [];
+        let productWithCate = [];
+
+        // Toast提示
+        function showToast(msg = "已加入購物車") {
+            const t = document.getElementById("toast");
+            t.textContent = msg;
+            t.classList.add("show");
+            setTimeout(() => t.classList.remove("show"), 1000);
+        }
+        function closeTip() {
+            document.getElementById("tipBox").classList.add("hidden");
         }
 
-        // 新增：切換點餐類型
+        // 切換套餐/單點
         function switchOrderType(type) {
             currentOrderType = type;
-            // 切換按鈕狀態
-            document.querySelectorAll('.order-type-btn').forEach(btn => {
-                btn.classList.toggle('active', btn.getAttribute('onclick').includes(type));
+            document.querySelectorAll(".order-type-btn").forEach(btn => {
+                btn.classList.toggle("active", btn.getAttribute("onclick").includes(type));
             });
-            // 切換區域顯示
-            document.getElementById('mealSection').classList.toggle('hidden', type === 'single');
-            document.getElementById('singleSection').classList.toggle('hidden', type === 'meal');
-            document.getElementById('mealFoodSection').classList.toggle('hidden', type === 'single');
-            // 重置選擇
+            document.getElementById("mealSection").classList.toggle("hidden", type === "single");
+            document.getElementById("singleSection").classList.toggle("hidden", type === "meal");
+            document.getElementById("mealFoodSection").classList.toggle("hidden", type === "single");
             clearSelect();
-            // 單點模式隱藏提示框
-            if (type === 'single') {
+            if (type === "single") {
                 closeTip();
-                // 載入單點菜品 (含分類)
-                loadSingleFoodByCategory();
+                renderSingleFoodByDB();
+            } else {
+                renderMealFoodByDB();
             }
         }
 
-        // 關閉提示
-        function closeTip(){
-            document.getElementById('tipBox').classList.add('hidden');
-        }
-
-        // 清空選擇
-        function clearSelect(){
+        // 清空全部選擇
+        function clearSelect() {
             selectFoodArr = [];
             selectMeal = null;
             needSelectNum = 0;
             baseMealPrice = 0;
-            document.querySelectorAll('.meal-item').forEach(i=>i.classList.remove('meal-active'));
+            document.querySelectorAll(".meal-item").forEach(i => i.classList.remove("meal-active"));
             calcPrice();
             renderSelectList();
             closeTip();
         }
 
-        // 套餐選擇
-        document.querySelectorAll('.meal-item').forEach(item=>{
-            item.addEventListener('click',()=>{
-                if (currentOrderType !== 'meal') return; // 非套餐模式不執行
-                document.querySelectorAll('.meal-item').forEach(i=>i.classList.remove('meal-active'));
-                item.classList.add('meal-active');
+        // 套餐點擊
+        document.querySelectorAll(".meal-item").forEach(item => {
+            item.addEventListener("click", () => {
+                if (currentOrderType !== "meal") return;
+                document.querySelectorAll(".meal-item").forEach(i => i.classList.remove("meal-active"));
+                item.classList.add("meal-active");
                 selectMeal = item.dataset.type;
-                needSelectNum = parseInt(item.dataset.num);
-                baseMealPrice = parseInt(item.dataset.price);
+                needSelectNum = Number(item.dataset.num);
+                baseMealPrice = Number(item.dataset.price);
                 selectFoodArr = [];
                 calcPrice();
                 renderSelectList();
-                if(needSelectNum > 0){
-                    document.getElementById('tipBox').classList.remove('hidden');
-                    document.getElementById('tipText').innerText=`請再選 ${needSelectNum} 樣小菜完成點餐`;
-                }else{
-                    closeTip();
-                }
+                if (needSelectNum > 0) {
+                    document.getElementById("tipBox").classList.remove("hidden");
+                    document.getElementById("tipText").textContent = `請再選 ${needSelectNum} 樣小菜完成點餐`;
+                } else closeTip();
             })
-        });
+        })
 
-        // 載入套餐模式菜品
-        async function loadMealFood(){
-            const {data} = await client.from('food_product').select('*');
-            allFoodData = data || []; // 儲存所有菜品資料
-            const box = document.getElementById('foodList');
-            box.innerHTML = '';
-            allFoodData.forEach(food=>{
-                let isOver = food.price > 20;
-                let html = `
-                <div class="food-item border rounded p-2 cursor-pointer ${isOver?'bg-red-50':''}" onclick="chooseFood(${food.id},'${food.name}',${food.price})">
-                    <div>${food.name}</div>
-                    <div class="text-sm ${isOver?'text-red-500':'text-green-600'}">${food.price}元 ${isOver?'(補差價)':''}</div>
-                </div>
-                `;
-                box.innerHTML += html;
+        // 載入分類+商品關聯
+        async function loadAllData() {
+            const { data: cateData } = await client.from("food_category").select("*").order("sort");
+            categoryList = cateData;
+            const { data: prodData } = await client.from("food_product").select(`
+                id, name, price, cate_id,
+                food_category(name)
+            `);
+            productWithCate = prodData;
+            renderMealFoodByDB();
+        }
+
+        // ========== 套餐食材：依分類渲染 ==========
+        function renderMealFoodByDB() {
+            const wrap = document.getElementById("mealFoodContainer");
+            wrap.innerHTML = "";
+            categoryList.forEach(cate => {
+                const cateId = cate.id;
+                const cateName = cate.name;
+                const items = productWithCate.filter(p => p.cate_id === cateId);
+                if (items.length === 0) return;
+
+                // 分類標題
+                const titleDiv = document.createElement("div");
+                titleDiv.className = "category-title";
+                titleDiv.textContent = "▸ " + cateName;
+                wrap.appendChild(titleDiv);
+
+                // 食材網格
+                const gridDiv = document.createElement("div");
+                gridDiv.className = "food-grid";
+                items.forEach(food => {
+                    const over20 = food.price > 20;
+                    const itemDiv = document.createElement("div");
+                    itemDiv.className = "meal-food-item " + (over20 ? "bg-red-50" : "");
+                    itemDiv.innerHTML = `
+                        <div>${food.name}</div>
+                        <div class="meal-food-price ${over20 ? "text-red-500" : "text-green-600"}">
+                            ${food.price}元 ${over20 ? "(補差價)" : ""}
+                        </div>
+                    `;
+                    itemDiv.onclick = () => chooseFood(food.id, food.name, food.price);
+                    gridDiv.appendChild(itemDiv);
+                })
+                wrap.appendChild(gridDiv);
             })
         }
 
-        // 載入單點模式菜品 (依分類歸類)
-        function loadSingleFoodByCategory() {
-            const container = document.getElementById('singleFoodContainer');
-            container.innerHTML = '';
-            
-            // 若無菜品資料則先載入
-            if (allFoodData.length === 0) {
-                loadMealFood().then(() => {
-                    renderSingleFoodByCategory();
-                });
-                return;
-            }
-            
-            renderSingleFoodByCategory();
-        }
+        // ========== 單點食材：依分類渲染 ==========
+        function renderSingleFoodByDB() {
+            const wrap = document.getElementById("singleFoodContainer");
+            wrap.innerHTML = "";
+            categoryList.forEach(cate => {
+                const cateId = cate.id;
+                const cateName = cate.name;
+                const items = productWithCate.filter(p => p.cate_id === cateId);
+                if (items.length === 0) return;
 
-        // 渲染單點模式菜品 (依分類歸類)
-        function renderSingleFoodByCategory() {
-            const container = document.getElementById('singleFoodContainer');
-            container.innerHTML = '';
+                const titleDiv = document.createElement("div");
+                titleDiv.className = "category-title";
+                titleDiv.textContent = "▸ " + cateName;
+                wrap.appendChild(titleDiv);
 
-            // 分類整理菜品 (這裡假設food_product有category欄位，若沒有請根據實際欄位調整)
-            // 若資料庫沒有分類欄位，可手動建立分類規則，例如：
-            const categoryMap = {
-                '經典小菜': [],
-                '蔬菜類': [],
-                '特製配料': [],
-                '其他': []
-            };
-
-            // 將菜品分類 (這裡示範根據名稱關鍵字分類，可根據實際category欄位調整)
-            allFoodData.forEach(food => {
-                if (['筍', '海帶', '豆干', '貢丸'].some(key => food.name.includes(key))) {
-                    categoryMap['經典小菜'].push(food);
-                } else if (['菜', '菇', '瓜', '筊白筍', '番茄'].some(key => food.name.includes(key))) {
-                    categoryMap['蔬菜類'].push(food);
-                } else if (['辣', '醬', '油'].some(key => food.name.includes(key))) {
-                    categoryMap['特製配料'].push(food);
-                } else {
-                    categoryMap['其他'].push(food);
-                }
-            });
-
-            // 渲染每個分類的菜品
-            Object.keys(categoryMap).forEach(category => {
-                const foods = categoryMap[category];
-                if (foods.length === 0) return;
-
-                // 建立分類標題
-                const categoryTitle = document.createElement('div');
-                categoryTitle.className = 'category-title';
-                categoryTitle.textContent = category;
-                container.appendChild(categoryTitle);
-
-                // 建立菜品網格
-                const foodGrid = document.createElement('div');
-                foodGrid.className = 'single-food-grid';
-                container.appendChild(foodGrid);
-
-                // 渲染該分類下的菜品
-                foods.forEach(food => {
-                    const foodItem = document.createElement('div');
-                    foodItem.className = 'single-food-item';
-                    foodItem.innerHTML = `
+                const gridDiv = document.createElement("div");
+                gridDiv.className = "food-grid";
+                items.forEach(food => {
+                    const itemDiv = document.createElement("div");
+                    itemDiv.className = "single-food-item";
+                    itemDiv.innerHTML = `
                         <div>${food.name}</div>
                         <div class="single-food-price">${food.price}元</div>
                     `;
-                    foodItem.onclick = () => chooseFood(food.id, food.name, food.price);
-                    foodGrid.appendChild(foodItem);
-                });
-            });
+                    itemDiv.onclick = () => chooseFood(food.id, food.name, food.price);
+                    gridDiv.appendChild(itemDiv);
+                })
+                wrap.appendChild(gridDiv);
+            })
         }
 
-        // 選擇食材 (支援套餐/單點模式)
-        function chooseFood(id,name,price){
-            // 套餐模式：必須先選套餐
-            if (currentOrderType === 'meal' && !selectMeal) {
-                alert('請先選擇套餐');
-                return;
+        // 選取食材共用函式
+        function chooseFood(id, name, price) {
+            if (currentOrderType === "meal") {
+                if (!selectMeal) { alert("請先選擇套餐"); return; }
+                if (needSelectNum > 0 && selectFoodArr.length >= needSelectNum) {
+                    alert(`此套餐限選${needSelectNum}樣小菜`);
+                    return;
+                }
             }
-            
-            // 套餐模式：檢查數量限制
-            if (currentOrderType === 'meal' && needSelectNum>0 && selectFoodArr.length >= needSelectNum) {
-                alert(`此套餐僅可選${needSelectNum}樣小菜`);
-                return;
-            }
-            
-            // 檢查是否已選擇
-            let exist = selectFoodArr.find(item=>item.id===id);
-            if(exist) {
-                showToast('已選擇過此食材');
-                return;
-            }
-            
-            // 加入購物車
-            selectFoodArr.push({id,name,price});
+            const exist = selectFoodArr.find(x => x.id === id);
+            if (exist) { showToast("已選過此品項"); return; }
+
+            selectFoodArr.push({ id, name, price });
             calcPrice();
             renderSelectList();
-            // 顯示彈窗提示
             showToast(`已加入 ${name}`);
         }
 
-        // 計算金額 (支援套餐/單點模式)
-        function calcPrice(){
+        // 金額計算
+        function calcPrice() {
             totalDiff = 0;
-            
-            if (currentOrderType === 'meal') {
-                // 套餐模式：計算補差價
-                selectFoodArr.forEach(item=>{
-                    if(item.price>20) totalDiff += (item.price-20);
+            if (currentOrderType === "meal") {
+                selectFoodArr.forEach(item => {
+                    if (item.price > 20) totalDiff += item.price - 20;
                 })
             } else {
-                // 單點模式：直接計算食材總價，無套餐金額和差價
                 baseMealPrice = 0;
                 totalDiff = 0;
-                selectFoodArr.forEach(item=>{
-                    baseMealPrice += item.price;
-                })
+                selectFoodArr.forEach(item => baseMealPrice += item.price);
             }
-            
-            let all = baseMealPrice + totalDiff;
-            document.getElementById('mealPrice').innerText = currentOrderType === 'meal' ? baseMealPrice : 0;
-            document.getElementById('diffPrice').innerText = totalDiff;
-            document.getElementById('allPrice').innerText = all;
+            const totalAll = baseMealPrice + totalDiff;
+            document.getElementById("mealPrice").textContent = currentOrderType === "meal" ? baseMealPrice : 0;
+            document.getElementById("diffPrice").textContent = totalDiff;
+            document.getElementById("allPrice").textContent = totalAll;
         }
 
-        // 渲染已選清單
-        function renderSelectList(){
-            let html = '';
-            selectFoodArr.forEach((item,idx)=>{
-                let diff = '';
-                // 單點模式不顯示補差價提示
-                if (currentOrderType === 'meal' && item.price>20) {
-                    diff = `(補${item.price-20}元)`;
+        // 已選清單
+        function renderSelectList() {
+            let html = "";
+            selectFoodArr.forEach((item, idx) => {
+                let diffTxt = "";
+                if (currentOrderType === "meal" && item.price > 20) {
+                    diffTxt = `(補${item.price - 20}元)`;
                 }
-                html += `<div>${idx+1}. ${item.name} ${item.price}元 ${diff} <button onclick="delFood(${item.id})" style="color:#ef4444;border:none;background:none;cursor:pointer;">移除</button></div>`;
+                html += `
+                <div>${idx+1}. ${item.name} ${item.price}元 ${diffTxt}
+                <button onclick="delFood(${item.id})" style="color:#ef4444;border:none;background:none;cursor:pointer;">移除</button>
+                </div>
+                `;
             })
-            document.getElementById('selectList').innerHTML = html || '尚未選擇食材';
+            document.getElementById("selectList").innerHTML = html || "尚未選擇食材";
         }
 
-        // 移除食材
-        function delFood(id){
-            selectFoodArr = selectFoodArr.filter(item=>item.id!==id);
+        // 移除品項
+        function delFood(id) {
+            selectFoodArr = selectFoodArr.filter(x => x.id !== id);
             calcPrice();
             renderSelectList();
-            showToast('已移除選項');
+            showToast("已移除品項");
         }
 
-        // 提交訂單 (支援套餐/單點模式)
-        async function submitOrder(){
-            // 套餐模式驗證
-            if (currentOrderType === 'meal') {
-                if(!selectMeal){
-                    alert('請選擇套餐');
+        // 送出訂單
+        async function submitOrder() {
+            if (currentOrderType === "meal") {
+                if (!selectMeal) { alert("請先選套餐"); return; }
+                if (needSelectNum > 0 && selectFoodArr.length < needSelectNum) {
+                    alert(`還差 ${needSelectNum - selectFoodArr.length} 樣小菜`);
                     return;
                 }
-                if(needSelectNum>0 && selectFoodArr.length < needSelectNum){
-                    alert(`還需再選${needSelectNum-selectFoodArr.length}樣小菜`);
-                    return;
-                }
-            } 
-            // 單點模式驗證
-            else {
-                if(selectFoodArr.length === 0){
-                    alert('請選擇至少一種食材');
-                    return;
-                }
+            } else {
+                if (selectFoodArr.length === 0) { alert("請至少選一樣食材"); return; }
             }
-
-            let orderNo = 'ORD'+new Date().getTime();
-            const {error} = await client.from('order_list').insert([{
-                order_no:orderNo,
-                order_type: currentOrderType === 'meal' ? selectMeal : 'single',
-                select_food:selectFoodArr,
-                total_price:baseMealPrice+totalDiff,
-                diff_price:totalDiff
+            const orderNo = "ORD" + Date.now();
+            const { error } = await client.from("order_list").insert([{
+                order_no: orderNo,
+                order_type: currentOrderType === "meal" ? selectMeal : "single",
+                select_food: selectFoodArr,
+                total_price: baseMealPrice + totalDiff,
+                diff_price: totalDiff
             }])
-            if(error){
-                alert('訂單送出失敗');
+            if (error) {
                 console.log(error);
-            }else{
-                alert(`訂單已送出，店家已收到！\n訂單編號：${orderNo}`);
+                alert("訂單送出失敗");
+            } else {
+                alert(`訂單成功！編號：${orderNo}`);
                 clearSelect();
             }
         }
 
         // 初始化載入
-        loadMealFood();
+        loadAllData();
     </script>
 </body>
 </html>
