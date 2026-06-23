@@ -122,6 +122,61 @@
             color: white;
             border-color: #ea580c;
         }
+        /* 放大已選菜品文字 */
+        #selectList {
+            font-size: 1rem;
+            line-height: 1.6;
+        }
+        #selectList button {
+            font-size: 0.9rem;
+        }
+        /* 口味選項樣式 */
+        .flavor-section {
+            margin-top: 1.5rem;
+            padding-top: 1rem;
+            border-top: 1px solid #eee;
+        }
+        .flavor-title {
+            font-weight: bold;
+            color: #ea580c;
+            margin-bottom: 0.8rem;
+            font-size: 1rem;
+        }
+        .option-group {
+            margin-bottom: 0.8rem;
+        }
+        .option-label {
+            display: inline-block;
+            margin-right: 12px;
+            cursor: pointer;
+        }
+        .option-group-title {
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+            color: #333;
+        }
+        .checkbox-option {
+            margin-right: 8px;
+        }
+        .flavor-note {
+            font-size: 0.8rem;
+            color: #dc2626;
+            margin-top: 0.5rem;
+        }
+        /* 手機末3碼輸入框 */
+        .phone-input-area {
+            margin-top:1rem;
+        }
+        #phoneLast3 {
+            width:100px;
+            padding:6px;
+            border:1px solid #ccc;
+            border-radius:4px;
+            font-size:1rem;
+        }
+        .required-mark {
+            color:#ef4444;
+        }
     </style>
 </head>
 <body>
@@ -136,13 +191,13 @@
         <div class="bg-white rounded-xl p-4 shadow mb-4">
             <h2 class="font-bold text-lg mb-3">📋 點餐類型</h2>
             <div>
-                <button class="order-type-btn active" onclick="switchOrderType('meal')">套餐點餐</button>
-                <button class="order-type-btn" onclick="switchOrderType('single')">單點選項</button>
+                <button class="order-type-btn" onclick="switchOrderType('meal')">套餐點餐</button>
+                <button class="order-type-btn active" onclick="switchOrderType('single')">單點選項</button>
             </div>
         </div>
 
         <!-- 套餐選擇區 -->
-        <div id="mealSection" class="bg-white rounded-xl p-4 shadow mb-4">
+        <div id="mealSection" class="bg-white rounded-xl p-4 shadow mb-4 hidden">
             <h2 class="font-bold text-lg mb-3">🍱 選擇套餐</h2>
             <div class="grid grid-cols-3 gap-3">
                 <div class="meal-item border rounded-lg p-3 cursor-pointer text-center" data-type="smallBamboo" data-num="0" data-price="125">
@@ -165,14 +220,14 @@
         </div>
 
         <!-- 單點頁面 -->
-        <div id="singleSection" class="bg-white rounded-xl p-4 shadow mb-4 hidden">
+        <div id="singleSection" class="bg-white rounded-xl p-4 shadow mb-4">
             <h2 class="font-bold text-lg mb-3">🍴 單點選項</h2>
             <p class="text-sm text-gray-500 mb-3">自由選購，無數量限制</p>
             <div id="singleFoodContainer"></div>
         </div>
 
         <!-- 套餐食材區 (已改為分類排版) -->
-        <div id="mealFoodSection" class="bg-white rounded-xl p-4 shadow mb-4">
+        <div id="mealFoodSection" class="bg-white rounded-xl p-4 shadow mb-4 hidden">
             <h2 class="font-bold text-lg mb-3">🥬 挑選食材</h2>
             <div id="mealFoodContainer"></div>
         </div>
@@ -186,10 +241,98 @@
         <!-- 已選清單 -->
         <div class="bg-white rounded-xl p-4 shadow mb-4">
             <h2 class="font-bold text-lg mb-3">🛒 已選菜品</h2>
-            <div id="selectList" class="mb-3 text-sm"></div>
-            <div class="flex justify-between font-bold">
+            <div id="selectList" class="mb-3"></div>
+            
+            <!-- 新增口味選項區 -->
+            <div class="flavor-section">
+                <div class="flavor-title">🎨 自訂口味</div>
+                
+                <!-- 口味選項 -->
+                <div class="option-group">
+                    <div class="option-group-title">口味：</div>
+                    <label class="option-label">
+                        <input type="radio" name="flavor" value="原味" checked onchange="updateFlavorPrice()"> 原味
+                    </label>
+                    <label class="option-label">
+                        <input type="radio" name="flavor" value="蒜味" onchange="updateFlavorPrice()"> 蒜味
+                    </label>
+                    <label class="option-label">
+                        <input type="radio" name="flavor" value="椒麻" onchange="updateFlavorPrice()"> 椒麻
+                    </label>
+                    <label class="option-label">
+                        <input type="radio" name="flavor" value="泰式" onchange="updateFlavorPrice()"> 泰式
+                    </label>
+                    <label class="option-label">
+                        <input type="radio" name="flavor" value="檸檬" onchange="updateFlavorPrice()"> 檸檬
+                    </label>
+                    <div class="flavor-note" id="flavor-note">※ 未滿100元限做原味,選其他口味加價10元；滿百元所有口味免加價</div>
+                </div>
+
+                <!-- 鹹度選項 -->
+                <div class="option-group">
+                    <div class="option-group-title">鹹度：</div>
+                    <label class="option-label">
+                        <input type="radio" name="salt" value="清淡"> 清淡
+                    </label>
+                    <label class="option-label">
+                        <input type="radio" name="salt" value="正常" checked> 正常
+                    </label>
+                    <label class="option-label">
+                        <input type="radio" name="salt" value="重鹹"> 重鹹
+                    </label>
+                </div>
+
+                <!-- 配料選項 -->
+                <div class="option-group">
+                    <div class="option-group-title">配料 (可多選)：</div>
+                    <label class="option-label">
+                        <input type="checkbox" name="topping" value="蔥花" class="checkbox-option"> 蔥花
+                    </label>
+                    <label class="option-label">
+                        <input type="checkbox" name="topping" value="蒜泥" class="checkbox-option"> 蒜泥
+                    </label>
+                    <label class="option-label">
+                        <input type="checkbox" name="topping" value="洋蔥" class="checkbox-option"> 洋蔥
+                    </label>
+                    <label class="option-label">
+                        <input type="checkbox" name="topping" value="香油" class="checkbox-option"> 香油
+                    </label>
+                </div>
+
+                <!-- 辣度選項 -->
+                <div class="option-group">
+                    <div class="option-group-title">辣度：</div>
+                    <label class="option-label">
+                        <input type="radio" name="spicy" value="不辣" checked> 不辣
+                    </label>
+                    <label class="option-label">
+                        <input type="radio" name="spicy" value="微辣"> 微辣
+                    </label>
+                    <label class="option-label">
+                        <input type="radio" name="spicy" value="小辣"> 小辣
+                    </label>
+                    <label class="option-label">
+                        <input type="radio" name="spicy" value="中辣"> 中辣
+                    </label>
+                    <label class="option-label">
+                        <input type="radio" name="spicy" value="大辣"> 大辣
+                    </label>
+                </div>
+
+                <!-- 手機末3碼必填輸入框 -->
+                <div class="option-group phone-input-area">
+                    <div class="option-group-title">
+                        手機號碼末3碼 <span class="required-mark">*</span>：
+                    </div>
+                    <input id="phoneLast3" type="text" maxlength="3" placeholder="輸入3位數字" oninput="this.value = this.value.replace(/[^0-9]/g,'')">
+                    <div class="text-sm text-gray-500 mt-1">必填，僅限輸入0-9數字，共3碼</div>
+                </div>
+            </div>
+            
+            <div class="flex justify-between font-bold mt-4">
                 <span>套餐金額：<span id="mealPrice">0</span> 元</span>
                 <span>補差價總計：<span id="diffPrice">0</span> 元</span>
+                <span>口味加價：<span id="flavorPrice">0</span> 元</span>
                 <span class="text-red-600">應付總金額：<span id="allPrice">0</span> 元</span>
             </div>
         </div>
@@ -214,13 +357,12 @@
         let selectFoodArr = [];
         let baseMealPrice = 0;
         let totalDiff = 0;
-        let currentOrderType = 'meal';
+        let currentOrderType = 'single';
+        let flavorExtraPrice = 0;
 
-        // 全域資料
         let categoryList = [];
         let productWithCate = [];
 
-        // Toast提示
         function showToast(msg = "已加入購物車") {
             const t = document.getElementById("toast");
             t.textContent = msg;
@@ -231,7 +373,6 @@
             document.getElementById("tipBox").classList.add("hidden");
         }
 
-        // 切換套餐/單點
         function switchOrderType(type) {
             currentOrderType = type;
             document.querySelectorAll(".order-type-btn").forEach(btn => {
@@ -247,21 +388,30 @@
             } else {
                 renderMealFoodByDB();
             }
+            updateFlavorPrice();
         }
 
-        // 清空全部選擇
         function clearSelect() {
             selectFoodArr = [];
             selectMeal = null;
             needSelectNum = 0;
             baseMealPrice = 0;
+            totalDiff = 0;
+            flavorExtraPrice = 0;
             document.querySelectorAll(".meal-item").forEach(i => i.classList.remove("meal-active"));
+            document.querySelector('input[name="flavor"][value="原味"]').checked = true;
+            document.querySelector('input[name="salt"][value="清淡"]').checked = true;
+            document.querySelector('input[name="spicy"][value="不辣"]').checked = true;
+            document.querySelectorAll('input[name="topping"]').forEach(checkbox => {
+                checkbox.checked = false;
+            });
+            // 清空手機輸入框
+            document.getElementById("phoneLast3").value = "";
             calcPrice();
             renderSelectList();
             closeTip();
         }
 
-        // 套餐點擊
         document.querySelectorAll(".meal-item").forEach(item => {
             item.addEventListener("click", () => {
                 if (currentOrderType !== "meal") return;
@@ -273,6 +423,7 @@
                 selectFoodArr = [];
                 calcPrice();
                 renderSelectList();
+                updateFlavorPrice();
                 if (needSelectNum > 0) {
                     document.getElementById("tipBox").classList.remove("hidden");
                     document.getElementById("tipText").textContent = `請再選 ${needSelectNum} 樣小菜完成點餐`;
@@ -280,7 +431,6 @@
             })
         })
 
-        // 載入分類+商品關聯
         async function loadAllData() {
             const { data: cateData } = await client.from("food_category").select("*").order("sort");
             categoryList = cateData;
@@ -289,10 +439,10 @@
                 food_category(name)
             `);
             productWithCate = prodData;
-            renderMealFoodByDB();
+            renderSingleFoodByDB();
+            updateFlavorPrice();
         }
 
-        // ========== 套餐食材：依分類渲染 ==========
         function renderMealFoodByDB() {
             const wrap = document.getElementById("mealFoodContainer");
             wrap.innerHTML = "";
@@ -301,14 +451,10 @@
                 const cateName = cate.name;
                 const items = productWithCate.filter(p => p.cate_id === cateId);
                 if (items.length === 0) return;
-
-                // 分類標題
                 const titleDiv = document.createElement("div");
                 titleDiv.className = "category-title";
                 titleDiv.textContent = "▸ " + cateName;
                 wrap.appendChild(titleDiv);
-
-                // 食材網格
                 const gridDiv = document.createElement("div");
                 gridDiv.className = "food-grid";
                 items.forEach(food => {
@@ -328,7 +474,6 @@
             })
         }
 
-        // ========== 單點食材：依分類渲染 ==========
         function renderSingleFoodByDB() {
             const wrap = document.getElementById("singleFoodContainer");
             wrap.innerHTML = "";
@@ -337,12 +482,10 @@
                 const cateName = cate.name;
                 const items = productWithCate.filter(p => p.cate_id === cateId);
                 if (items.length === 0) return;
-
                 const titleDiv = document.createElement("div");
                 titleDiv.className = "category-title";
                 titleDiv.textContent = "▸ " + cateName;
                 wrap.appendChild(titleDiv);
-
                 const gridDiv = document.createElement("div");
                 gridDiv.className = "food-grid";
                 items.forEach(food => {
@@ -359,7 +502,6 @@
             })
         }
 
-        // 選取食材共用函式
         function chooseFood(id, name, price) {
             if (currentOrderType === "meal") {
                 if (!selectMeal) { alert("請先選擇套餐"); return; }
@@ -370,14 +512,27 @@
             }
             const exist = selectFoodArr.find(x => x.id === id);
             if (exist) { showToast("已選過此品項"); return; }
-
             selectFoodArr.push({ id, name, price });
             calcPrice();
             renderSelectList();
             showToast(`已加入 ${name}`);
         }
 
-        // 金額計算
+        // 重寫計價邏輯
+        function updateFlavorPrice() {
+            const baseTotal = baseMealPrice + totalDiff;
+            const selectedFlavor = document.querySelector('input[name="flavor"]:checked').value;
+            // 規則：未滿100且非原味才+10，滿百元一律不加
+            if(baseTotal < 100 && selectedFlavor !== "原味"){
+                flavorExtraPrice = 10;
+            }else{
+                flavorExtraPrice = 0;
+            }
+            document.getElementById("flavorPrice").textContent = flavorExtraPrice;
+            const allTotal = baseTotal + flavorExtraPrice;
+            document.getElementById("allPrice").textContent = allTotal;
+        }
+
         function calcPrice() {
             totalDiff = 0;
             if (currentOrderType === "meal") {
@@ -389,13 +544,11 @@
                 totalDiff = 0;
                 selectFoodArr.forEach(item => baseMealPrice += item.price);
             }
-            const totalAll = baseMealPrice + totalDiff;
             document.getElementById("mealPrice").textContent = currentOrderType === "meal" ? baseMealPrice : 0;
             document.getElementById("diffPrice").textContent = totalDiff;
-            document.getElementById("allPrice").textContent = totalAll;
+            updateFlavorPrice();
         }
 
-        // 已選清單
         function renderSelectList() {
             let html = "";
             selectFoodArr.forEach((item, idx) => {
@@ -412,7 +565,6 @@
             document.getElementById("selectList").innerHTML = html || "尚未選擇食材";
         }
 
-        // 移除品項
         function delFood(id) {
             selectFoodArr = selectFoodArr.filter(x => x.id !== id);
             calcPrice();
@@ -420,8 +572,31 @@
             showToast("已移除品項");
         }
 
-        // 送出訂單
+        function getFlavorInfo() {
+            const flavor = document.querySelector('input[name="flavor"]:checked').value;
+            const salt = document.querySelector('input[name="salt"]:checked').value;
+            const toppings = [];
+            document.querySelectorAll('input[name="topping"]:checked').forEach(checkbox => {
+                toppings.push(checkbox.value);
+            });
+            const spicy = document.querySelector('input[name="spicy"]:checked').value;
+            return { flavor, salt, toppings, spicy };
+        }
+
+        // 取得當前完整日期時間
+        function getNowDateTime(){
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth()+1).padStart(2,'0');
+            const day = String(now.getDate()).padStart(2,'0');
+            const h = String(now.getHours()).padStart(2,'0');
+            const m = String(now.getMinutes()).padStart(2,'0');
+            const s = String(now.getSeconds()).padStart(2,'0');
+            return `${year}-${month}-${day} ${h}:${m}:${s}`;
+        }
+
         async function submitOrder() {
+            // 1. 驗證套餐/單點食材
             if (currentOrderType === "meal") {
                 if (!selectMeal) { alert("請先選套餐"); return; }
                 if (needSelectNum > 0 && selectFoodArr.length < needSelectNum) {
@@ -431,24 +606,73 @@
             } else {
                 if (selectFoodArr.length === 0) { alert("請至少選一樣食材"); return; }
             }
+
+            // 2. 驗證手機末3碼必填、3位數字
+            const phone3 = document.getElementById("phoneLast3").value.trim();
+            if(phone3 === ""){
+                alert("請填寫手機號碼末3碼");
+                document.getElementById("phoneLast3").focus();
+                return;
+            }
+            if(phone3.length !== 3){
+                alert("手機末3碼需輸入3位數字");
+                document.getElementById("phoneLast3").focus();
+                return;
+            }
+
+            const flavorInfo = getFlavorInfo();
             const orderNo = "ORD" + Date.now();
+            const nowTime = getNowDateTime();
+            const totalAll = baseMealPrice + totalDiff + flavorExtraPrice;
+
+            // 組菜品清單文字
+            let foodListText = "";
+            selectFoodArr.forEach((item,idx)=>{
+                let diffTxt = "";
+                if(currentOrderType==="meal" && item.price>20) diffTxt = `(補${item.price-20}元)`;
+                foodListText += `${idx+1}. ${item.name} ${item.price}元 ${diffTxt}\n`;
+            })
+
             const { error } = await client.from("order_list").insert([{
                 order_no: orderNo,
                 order_type: currentOrderType === "meal" ? selectMeal : "single",
                 select_food: selectFoodArr,
-                total_price: baseMealPrice + totalDiff,
-                diff_price: totalDiff
+                total_price: totalAll,
+                diff_price: totalDiff,
+                flavor_price: flavorExtraPrice,
+                flavor_info: flavorInfo,
+                phone_last3: phone3,
+                create_time: nowTime
             }])
             if (error) {
                 console.log(error);
                 alert("訂單送出失敗");
             } else {
-                alert(`訂單成功！編號：${orderNo}`);
+                // 完整訂單資訊彈窗
+                const msg = `===== 訂單成立 =====
+訂單編號：${orderNo}
+下單時間：${nowTime}
+手機末3碼：${phone3}
+
+【菜品清單】
+${foodListText}
+【金額明細】
+套餐金額：${currentOrderType==="meal"?baseMealPrice:0} 元
+小菜補差價：${totalDiff} 元
+口味加價：${flavorExtraPrice} 元
+應付總金額：${totalAll} 元
+
+【口味設定】
+口味：${flavorInfo.flavor}
+鹹度：${flavorInfo.salt}
+配料：${flavorInfo.toppings.length>0?flavorInfo.toppings.join("、"):"無"}
+辣度：${flavorInfo.spicy}
+====================`;
+                alert(msg);
                 clearSelect();
             }
         }
 
-        // 初始化載入
         loadAllData();
     </script>
 </body>
