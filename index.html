@@ -968,7 +968,7 @@
             });
 
             // 插入訂單到資料庫
-            const { error } = await client.from("order_list").insert([{
+            const { error } = await client.from("food_orderlist").insert([{
                 order_no: orderNo,
                 order_type: currentOrderType === "meal" ? selectMeal : "single",
                 select_food: selectFoodArr,
