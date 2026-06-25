@@ -6,15 +6,36 @@
     <title>雞老闆後台 - 出菜管理</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.43.0"></script>
     <style>
-        body{background:#f3f4f6;margin:0;padding:0;font-family:system-ui,sans-serif;}
-        .max-w-6xl{max-width:1400px;margin:0 auto;padding:1rem;}
-        .text-2xl{font-size:1.5rem;}
+        /* 基礎響應式重置 */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body{
+            background:#f3f4f6;
+            margin:0;
+            padding:0;
+            font-family:system-ui,sans-serif;
+            font-size: 16px;
+        }
+        /* 響應式容器 */
+        .max-w-6xl{
+            max-width:1400px;
+            margin:0 auto;
+            padding:0.5rem; /* 手機端減少內邊距 */
+            width: 100%;
+        }
+        /* 響應式文字大小 */
+        .text-2xl{
+            font-size: clamp(1.2rem, 5vw, 1.5rem); /* 視窗寬度自適應 */
+        }
         .font-bold{font-weight:bold;}
         .text-center{text-align:center;}
         .mb-6{margin-bottom:1.5rem;}
         .bg-white{background:#fff;}
         .rounded-xl{border-radius:1rem;}
-        .p-4{padding:1rem;}
+        .p-4{padding:0.8rem; /* 手機端減少內邊距 */}
         .shadow{box-shadow:0 2px 8px #00000015;}
         .mb-4{margin-bottom:1rem;}
         .border{border:1px solid #ddd;}
@@ -24,15 +45,30 @@
         .text-red-600{color:#dc2626;}
         .text-green-600{color:#16a34a;}
         .text-gray-500{color:#6b7280;font-size:0.9rem;}
-        .flavor-info{background:#fef3c7;padding:0.5rem;border-radius:0.5rem;margin:0.5rem 0;}
-        .order-item{border-left:4px solid #ea580c;padding-left:0.5rem;margin:0.25rem 0;}
+        .flavor-info{
+            background:#fef3c7;
+            padding:0.5rem;
+            border-radius:0.5rem;
+            margin:0.5rem 0;
+            font-size: 0.9rem; /* 手機端縮小字體 */
+        }
+        .order-item{
+            border-left:4px solid #ea580c;
+            padding-left:0.5rem;
+            margin:0.25rem 0;
+            font-size: 0.9rem;
+        }
+        /* 響應式按鈕 */
         .btn{
-            padding:0.5rem 1rem;
+            padding:0.6rem 0.8rem; /* 手機端調整按鈕內邊距 */
             border:none;
             border-radius:0.5rem;
             cursor:pointer;
             font-weight:bold;
-            margin:0 0.5rem 0;
+            margin:0 0.25rem 0.5rem 0; /* 手機端調整邊距 */
+            font-size: 0.9rem;
+            min-width: 80px; /* 保證按鈕最小寬度 */
+            display: inline-block; /* 確保按鈕排版正常 */
         }
         .btn-complete{background:#16a34a;color:white;}
         .btn-complete:hover{background:#15803d;}
@@ -52,11 +88,13 @@
         .btn-available:hover{background:#65a30d;}
         .btn-batch-reset{background:#0284c7;color:white;margin-bottom:1rem;}
         .btn-batch-reset:hover{background:#0369a1;}
+        /* 狀態標籤優化 */
         .status-tag{
             padding:0.25rem 0.5rem;
             border-radius:0.25rem;
             font-size:0.8rem;
             font-weight:bold;
+            display: inline-block;
         }
         .status-pending{background:#fbbf24;color:white;}
         .status-completed{background:#16a34a;color:white;}
@@ -65,6 +103,7 @@
             opacity:0.8;
             border-left:4px solid #16a34a;
         }
+        /* 彈窗響應式優化 */
         .manage-modal{
             position:fixed;
             top:0;
@@ -74,18 +113,21 @@
             background:rgba(0,0,0,0.5);
             display:flex;
             justify-content:center;
-            align-items:center;
+            align-items:flex-start; /* 手機端從頂部開始顯示 */
             z-index:1000;
             display:none;
+            padding: 1rem 0; /* 手機端上下內邊距 */
+            overflow-y: auto; /* 允許彈窗背景滾動 */
         }
         .manage-content{
             background:white;
-            padding:2rem;
+            padding:1rem; /* 手機端減少內邊距 */
             border-radius:1rem;
-            width:90%;
+            width:95%; /* 手機端佔95%寬度 */
             max-width:800px;
             max-height:90vh;
             overflow-y:auto;
+            margin-top: 1rem; /* 手機端頂部間距 */
         }
         .form-group{
             margin-bottom:1rem;
@@ -94,14 +136,19 @@
             display:block;
             margin-bottom:0.5rem;
             font-weight:bold;
+            font-size: 0.95rem;
         }
         .form-group input, .form-group select, .form-group textarea{
             width:100%;
             padding:0.75rem;
             border:1px solid #ddd;
             border-radius:0.5rem;
-            font-size:1rem;
+            font-size: 1rem;
+            /* 手機端優化表單元素 */
+            -webkit-appearance: none;
+            appearance: none;
         }
+        /* 菜品項目響應式 */
         .food-item{
             display:flex;
             align-items:center;
@@ -109,19 +156,26 @@
             border:1px solid #eee;
             border-radius:0.5rem;
             margin-bottom:0.5rem;
+            flex-wrap: wrap; /* 手機端自動換行 */
+            gap: 0.5rem; /* 增加元素間距 */
         }
         .food-item span{
             flex:1;
+            min-width: 120px; /* 保證文字區域最小寬度 */
+            font-size: 0.9rem;
         }
         .category-section{
             margin-bottom:2rem;
             padding-bottom:1rem;
             border-bottom:1px solid #eee;
         }
+        /* 標籤按鈕響應式 */
         .tab-buttons{
             display:flex;
             gap:0.5rem;
             margin-bottom:1rem;
+            overflow-x: auto; /* 手機端橫向滾動 */
+            padding-bottom: 0.5rem;
         }
         .tab-btn{
             padding:0.5rem 1rem;
@@ -130,6 +184,8 @@
             cursor:pointer;
             background:#e5e7eb;
             font-weight:bold;
+            white-space: nowrap; /* 防止按鈕文字換行 */
+            font-size: 0.9rem;
         }
         .tab-btn.active{
             background:#2563eb;
@@ -144,14 +200,32 @@
         .flex{display:flex;}
         .justify-between{justify-content:space-between;}
         .items-center{align-items:center;}
+        /* 手機端調整flex布局 */
+        @media (max-width: 768px) {
+            .flex {
+                flex-direction: column; /* 手機端垂直排列 */
+                gap: 1rem; /* 增加元素間距 */
+            }
+            .justify-between {
+                justify-content: flex-start;
+            }
+        }
         /* 備註樣式 */
-        .note-info{background:#e0f2fe;padding:0.5rem;border-radius:0.5rem;margin:0.5rem 0;border-left:4px solid #0284c7;}
+        .note-info{
+            background:#e0f2fe;
+            padding:0.5rem;
+            border-radius:0.5rem;
+            margin:0.5rem 0;
+            border-left:4px solid #0284c7;
+            font-size: 0.9rem;
+        }
         /* 菜品統計 */
         .food-stat-item{
             padding:0.5rem;
             border-bottom:1px solid #f0f0f0;
             display:flex;
             justify-content:space-between;
+            font-size: 0.9rem;
         }
         .food-stat-item:last-child{border-bottom:none;}
         .food-stat-label{font-weight:500;}
@@ -164,8 +238,11 @@
             border-radius: 0.25rem;
             font-weight: bold;
             margin-left: 0.5rem;
+            font-size: 0.8rem;
+            display: inline-block;
+            margin-top: 0.25rem;
         }
-        /* 新訂單彈窗 置中大紅框 */
+        /* 新訂單彈窗 響應式優化 */
         .order-notification-center {
             position: fixed;
             top: 50%;
@@ -173,28 +250,46 @@
             transform: translate(-50%, -50%);
             background: #dc2626;
             color: #fff;
-            font-size: 2.5rem;
+            font-size: clamp(1.5rem, 10vw, 2.5rem); /* 響應式字體 */
             font-weight: bold;
-            padding: 4rem 6rem;
+            padding: 2rem 3rem; /* 手機端減少內邊距 */
             border-radius: 16px;
             z-index: 999999;
             box-shadow: 0 0 40px rgba(220,38,38,0.7);
             display: none;
+            text-align: center;
+            width: 90%; /* 手機端寬度 */
+            max-width: 400px; /* 最大寬度限制 */
         }
-        /* 右上角小提示 */
+        /* 右上角小提示 響應式 */
         .order-notification-top {
             position: fixed;
             top: 20px;
             right: 20px;
             background: #dc2626;
             color: #fff;
-            font-size: 1.3rem;
+            font-size: clamp(1rem, 5vw, 1.3rem);
             font-weight: bold;
-            padding: 1rem 2rem;
+            padding: 0.8rem 1.5rem; /* 手機端減少內邊距 */
             border-radius: 10px;
             z-index: 999999;
             box-shadow: 0 4px 12px rgba(0,0,0,0.3);
             display: none;
+            max-width: calc(100% - 40px); /* 不超出螢幕 */
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            overflow: hidden;
+        }
+        /* 訂單卡片優化 */
+        .order-card {
+            margin-bottom: 1rem;
+        }
+        /* 按鈕組合響應式 */
+        .btn-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 1rem;
         }
     </style>
 </head>
@@ -207,7 +302,6 @@
         <div class="flex justify-between items-center mb-6">
             <h1 class="text-2xl font-bold text-center">🏪 雞老闆輕食料理 後台出菜系統</h1>
             <button class="btn btn-manage" onclick="openManageModal()">⚙️ 管理</button>
-            <!-- 已刪除測試新訂單彈窗按鈕 -->
         </div>
         <div class="bg-white rounded-xl p-4 shadow mb-4">
             <h2 class="font-bold text-lg mb-3">📋 最新待出餐訂單</h2>
@@ -287,11 +381,9 @@
         const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpleHdoemd4dW5mbmJzY2hraXpxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4MzE1MjksImV4cCI6MjA5NzQwNzUyOX0.X-sd8FcJ2AjLq9Ty_KWvjwfJCc2P4IItjRyxSu2vgiU";
         const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // 已刪除 testNotify 測試函數
-
         // 彈窗核心函數（已移除音效相關邏輯）
         function showNotify(){
-            console.log("=== 執行新訂單彈窗 ===");
+            // console.log("=== 執行新訂單彈窗 ===");
             const centerBox = document.getElementById("notifyCenter");
             const topBox = document.getElementById("notifyTop");
             centerBox.style.display = "block";
@@ -303,7 +395,7 @@
             setTimeout(()=>{
                 centerBox.style.display = "none";
                 topBox.style.display = "none";
-                console.log("彈窗已自動關閉");
+                // console.log("彈窗已自動關閉");
             },3000);
         }
 
@@ -315,20 +407,20 @@
                 schema:'public',
                 table:'food_orderlist'
             },(payload)=>{
-                console.log("✅ 監聽抓到新訂單：",payload);
+                // console.log("✅ 監聽抓到新訂單：",payload);
                 // 只執行彈窗，無音效
                 showNotify();
                 getOrderList();
             })
             .subscribe((status)=>{
-                console.log("訂單監聽連線狀態：",status);
+                // console.log("訂單監聽連線狀態：",status);
                 // 連線斷開自動重連
                 if(status === 'CHANNEL_ERROR' || status === 'TIMED_OUT'){
-                    console.log("連線中斷，3秒後重試監聽");
+                    // console.log("連線中斷，3秒後重試監聽");
                     setTimeout(watchOrder,3000);
                 }
             });
-            console.log("訂單實時監聽已開啟");
+            // console.log("訂單實時監聽已開啟");
         }
 
         async function completeOrder(orderId) {
@@ -338,7 +430,7 @@
                 .update({ status: 'completed', complete_time: new Date().toISOString() })
                 .eq('id', orderId);
             if (error) {
-                console.log('更新訂單狀態錯誤', error);
+                // console.log('更新訂單狀態錯誤', error);
                 alert('標記完成失敗，請稍後再試');
             } else getOrderList();
         }
@@ -346,7 +438,7 @@
             if (!confirm('⚠️ 確認要刪除此訂單？此操作無法復原！')) return;
             const { error } = await client.from('food_orderlist').delete().eq('id', orderId);
             if (error) {
-                console.log('刪除訂單錯誤', error);
+                // console.log('刪除訂單錯誤', error);
                 alert('刪除訂單失敗，請稍後再試');
             } else getOrderList();
         }
@@ -354,7 +446,7 @@
             if (!confirm('⚠️ 確認要刪除所有訂單？此操作無法復原！\n請再次確認！')) return;
             const { data: orders, error: fetchError } = await client.from('food_orderlist').select('id');
             if (fetchError) {
-                console.log('取得訂單列表錯誤', fetchError);
+                // console.log('取得訂單列表錯誤', fetchError);
                 alert('取得訂單列表失敗，請稍後再試');
                 return;
             }
@@ -362,7 +454,7 @@
                 const orderIds = orders.map(item=>item.id);
                 const { error: delErr } = await client.from('food_orderlist').delete().in('id', orderIds);
                 if (delErr) {
-                    console.log('刪除全部訂單錯誤', delErr);
+                    // console.log('刪除全部訂單錯誤', delErr);
                     alert('刪除訂單失敗');
                 } else {
                     alert('✅ 所有訂單已刪除');
@@ -385,7 +477,7 @@
                 .gte('create_time', startDate)
                 .lt('create_time', endDate);
             if (error) {
-                console.log('取得當天收入失敗', error);
+                // console.log('取得當天收入失敗', error);
                 return 0;
             }
             const total = data.reduce((sum, order) => sum + (order.total_price || 0), 0);
@@ -404,7 +496,7 @@
                 .gte('create_time', startDate)
                 .lt('create_time', endDate);
             if (error) {
-                console.log('取得當天訂單失敗', error);
+                // console.log('取得當天訂單失敗', error);
                 document.getElementById('todayFoodStats').innerHTML = '<p class="text-red-600">無法載入當天菜品統計</p>';
                 return;
             }
@@ -447,7 +539,7 @@
         async function getOrderList(){
             const {data,error} = await client.from('food_orderlist').select('*').order('create_time',{ascending:false});
             if(error){
-                console.log('讀取訂單錯誤',error);
+                // console.log('讀取訂單錯誤',error);
                 return;
             }
             let html = '';
@@ -476,11 +568,12 @@
                     const noteHtml = orderNote ? `<div class="note-info mt-2"><div><strong>顧客備註：</strong>${orderNote}</div></div>` : '';
                     const phoneLast3 = order.phone_last3 || '未填寫';
                     const phoneLast3Html = `<span class="phone-last3-tag">${phoneLast3}</span>`;
+                    // 優化訂單卡片結構，增加order-card類名
                     html += `
-                    <div class="border rounded p-4 mb-3 shadow-sm ${orderClass}">
-                        <div class="flex justify-between items-center mb-2">
+                    <div class="border rounded p-4 mb-3 shadow-sm ${orderClass} order-card">
+                        <div class="flex justify-between items-center mb-2 flex-wrap"> <!-- 手機端換行 -->
                             <div class="font-bold text-lg">訂單編號：${order.order_no}</div>
-                            <div>
+                            <div style="margin-top: 0.5rem; width: 100%;"> <!-- 手機端獨立一行 -->
                                 <span class="status-tag ${statusClass}">${statusText}</span>
                                 <span class="text-gray-500 ml-2">${order.create_time}</span>
                             </div>
@@ -502,7 +595,8 @@
                             <div><strong>口味加價：</strong>${flavorInfo.flavor_price || 0} 元</div>
                             <div class="text-red-600 font-bold mt-1">應付總金額：${order.total_price} 元</div>
                         </div>
-                        <div class="mt-4">
+                        <!-- 按鈕組合優化 -->
+                        <div class="btn-group">
                             ${completeBtn}
                             <button class="btn btn-delete" onclick="deleteOrder(${order.id})">🗑️ 刪除</button>
                         </div>
@@ -531,7 +625,7 @@
         async function loadCategories() {
             const { data, error } = await client.from('food_category').select('*').order('name',{ascending:true});
             if (error) {
-                console.log('載入分類錯誤', error);
+                // console.log('載入分類錯誤', error);
                 document.getElementById('categoryList').innerHTML = '<p class="text-red-600">food_category 資料表不存在</p>';
                 return;
             }
@@ -556,7 +650,7 @@
         }
         async function deleteCategory(cid) {
             if (!confirm('確認刪除此分類？')) return;
-            const { error } = await client.from('food_category').delete().eq('id');
+            const { error } = await client.from('food_category').delete().eq('id', cid); // 修正參數錯誤
             if (error) alert('刪除失敗');
             else { loadCategories(); loadFoods(); }
         }
@@ -564,7 +658,7 @@
             const newStatus = isSoldOut ? 'available' : 'soldout';
             const { error } = await client.from('food_product').update({ status: newStatus }).eq('id', fid);
             if (error) {
-                console.log('更新狀態失敗', error);
+                // console.log('更新狀態失敗', error);
                 alert('更新失敗，請確認food_product表有status欄位');
             } else loadFoods();
         }
@@ -572,7 +666,7 @@
             if (!confirm('⚠️ 確認將所有菜品統一恢復為可供應狀態？此操作無法復原！')) return;
             const { data: allFoods, error: fetchErr } = await client.from('food_product').select('id');
             if (fetchErr) {
-                console.log('撈取菜品ID失敗', fetchErr);
+                // console.log('撈取菜品ID失敗', fetchErr);
                 alert('批量恢復供應失敗：無法讀取菜品列表');
                 return;
             }
@@ -583,7 +677,7 @@
             const foodIds = allFoods.map(item => item.id);
             const { error } = await client.from('food_product').update({ status: 'available' }).in('id', foodIds);
             if (error) {
-                console.log('批量重置失敗', error);
+                // console.log('批量重置失敗', error);
                 alert('批量恢復供應失敗，請檢查food_product表是否存在status欄位');
             } else {
                 alert('✅ 所有菜品已恢復供應');
@@ -608,7 +702,7 @@
                     html += `
                     <div class="food-item">
                         <span>${f.name} - ${f.price}元 (${cName}) ${statusTag}</span>
-                        <button class="btn ${btnClass}" onclick="toggleFoodSoldOut(${f.id})">${btnText}</button>
+                        <button class="btn ${btnClass}" onclick="toggleFoodSoldOut(${f.id}, ${isSoldOut})">${btnText}</button>
                         <button class="btn btn-delete" onclick="deleteFood(${f.id})">刪除</button>
                     </div>`;
                 });
@@ -632,7 +726,7 @@
         }
         async function deleteFood(fid) {
             if (!confirm('確認刪除菜品？')) return;
-            const { error } = await client.from('food_product').delete().eq('id');
+            const { error } = await client.from('food_product').delete().eq('id', fid); // 修正參數錯誤
             if (!error) loadFoods();
             else alert('刪除失敗');
         }
@@ -642,6 +736,16 @@
         setInterval(getOrderList,5000);
         document.getElementById('manageModal').addEventListener('click',function(e){
             if(e.target === this) closeManageModal();
+        });
+        
+        // 手機端優化：點擊彈窗通知關閉
+        document.getElementById('notifyCenter').addEventListener('click', function() {
+            this.style.display = 'none';
+            document.getElementById('notifyTop').style.display = 'none';
+        });
+        document.getElementById('notifyTop').addEventListener('click', function() {
+            this.style.display = 'none';
+            document.getElementById('notifyCenter').style.display = 'none';
         });
     </script>
 </body>
