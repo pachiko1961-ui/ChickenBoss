@@ -983,7 +983,7 @@ ${foodText}
 
 口味設定：${flavorInfo.flavor}、${flavorInfo.salt}、${flavorInfo.spicy}、配料(${toppingsText})${boneText}
 應付總額：${totalAll} 元
-訂單編號：${orderNo}`;
+單號：${orderNo}`;
 
             showToast("處理中...");
             const { error } = await client.from("food_orderlist").insert([{
