@@ -6,6 +6,8 @@
     <title>雞老闆輕食料理 - 線上點餐</title>
     <!-- 引入 Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- 引入 html2canvas 處理截圖 -->
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <style>
         *{box-sizing:border-box;}
         body{background-color:#fef3c7;font-family:system-ui,sans-serif;margin:0;padding:0;}
@@ -33,6 +35,7 @@
         .text-blue-600{color:#2563eb;}
         .bg-blue-100{background:#dbeafe;}
         
+        /* 強制隱藏元件 */
         .hidden{display:none !important;}
         
         .meal-active{border:2px solid #f59e0b;background:#fffbeb;}
@@ -43,6 +46,8 @@
         .flex-1{flex:1;}
         .py-3{padding:0.75rem 0;}
         .bg-gray-400{background:#9ca3af;}
+        .bg-green-600{background-color:#16a34a;}
+        .bg-blue-600{background-color:#2563eb;}
         .justify-between{justify-content:space-between;}
         @media (max-width:768px){
             .grid-cols-3{grid-template-columns:1fr;}
@@ -188,10 +193,7 @@
             padding-top: 0.8rem;
             border-top: 1px dashed #eee;
         }
-        
-        /* 訂單成功頁面預設隱藏，使用 inline-style 切換 */
         #orderSuccessPage {
-            display: none;
             background-color: #fef3c7;
             min-height: 100vh;
             padding: 2rem 1rem;
@@ -252,24 +254,6 @@
             margin: 1rem 0;
             text-align: right;
         }
-        .copy-btn {
-            display: block;
-            width: 100%;
-            background: #16a34a;
-            color: white;
-            text-align: center;
-            padding: 1.2rem;
-            border-radius: 0.8rem;
-            font-weight: bold;
-            text-decoration: none;
-            margin-top: 2rem;
-            cursor: pointer;
-            border: none;
-            font-size: 1.2rem;
-        }
-        .copy-btn:hover {
-            background: #15803d;
-        }
         .back-btn {
             display: block;
             width: 100%;
@@ -292,11 +276,41 @@
             color: #2563eb;
             font-weight: bold;
         }
+        
+        /* 截圖預覽視窗樣式 */
+        #screenshotModal {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85);
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+        #screenshotImage {
+            max-width: 95%;
+            max-height: 75vh;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+        }
+        .close-modal-btn {
+            margin-top: 1.5rem;
+            background: #ea580c;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            border: none;
+            font-size: 1.1rem;
+        }
     </style>
 </head>
 <body>
     <!-- 主要點餐頁面 -->
-    <div id="orderMainPage" class="max-w-5xl" style="display: block;">
+    <div id="orderMainPage" class="max-w-5xl">
         <!-- 店家資訊 -->
         <div class="bg-orange-600 text-white rounded-xl p-4 mb-4 text-center">
             <h1 class="text-2xl font-bold">雞老闆輕食料理(鹹水雞 & 蔬菜)</h1>
@@ -427,8 +441,9 @@
     </div>
 
     <!-- 訂單成功頁面 -->
-    <div id="orderSuccessPage">
-        <div class="success-container">
+    <div id="orderSuccessPage" class="hidden">
+        <!-- 截圖區域：這裡面的內容會被轉成圖片 -->
+        <div id="captureArea" class="success-container">
             <div class="success-title">✅ 訂單明細確認</div>
             
             <div class="order-detail-section">
@@ -486,11 +501,27 @@
                     應付總金額：<span id="successTotalPrice"></span> 元
                 </div>
             </div>
-            
-            <!-- 手動複製按鈕 (手機端高相容性) -->
-            <button onclick="manualCopyText()" class="copy-btn">📋 複製訂單內容 (點我複製)</button>
+        </div>
+
+        <!-- 手機友善的動作按鈕區 -->
+        <div style="max-width: 800px; margin: 1rem auto;">
+            <div class="flex gap-3 mb-3">
+                <!-- 直接點擊觸發複製，避開安全性限制 -->
+                <button onclick="manualCopyText()" class="flex-1 bg-green-600 text-white py-3 rounded-xl font-bold">📋 複製文字</button>
+                <!-- 產生截圖讓使用者長按儲存 -->
+                <button onclick="generateScreenshot()" class="flex-1 bg-blue-600 text-white py-3 rounded-xl font-bold">📸 產生圖片截圖</button>
+            </div>
             <button class="back-btn" onclick="backToOrderPage()">返回繼續點餐</button>
         </div>
+    </div>
+
+    <!-- 截圖預覽與儲存彈窗 -->
+    <div id="screenshotModal" class="hidden">
+        <div style="color:white; font-size:1.2rem; margin-bottom:1rem; font-weight:bold; text-align:center;">
+            👇 請「長按」下方圖片即可儲存或分享
+        </div>
+        <img id="screenshotImage" src="" alt="訂單截圖">
+        <button class="close-modal-btn" onclick="closeScreenshotModal()">關閉圖片</button>
     </div>
 
     <!-- 提示彈窗 -->
@@ -508,7 +539,7 @@
         let totalDiff = 0;
         let currentOrderType = 'single';
         let flavorExtraPrice = 0;
-        let globalClipboardText = ""; 
+        let globalClipboardText = ""; // 儲存準備要複製的文字
 
         let categoryList = [];
         let productWithCate = [];
@@ -535,7 +566,7 @@
             }
         }
 
-        // 降級複製方案 (LINE 等手機內建瀏覽器必備)
+        // 降級複製方案
         function fallbackCopyText(text) {
             let textArea = document.createElement("textarea");
             textArea.value = text;
@@ -551,12 +582,41 @@
                 if (successful) {
                     alert("✅ 複製成功！可以直接去 LINE 貼上了。");
                 } else {
-                    alert("❌ 複製失敗，請手動反白訂單內容複製。");
+                    alert("❌ 複製失敗，請使用「產生圖片截圖」功能。");
                 }
             } catch (err) {
-                alert("❌ 您的瀏覽器不支援複製，請手動反白訂單內容複製。");
+                alert("❌ 您的瀏覽器不支援複製，請使用「產生圖片截圖」。");
             }
             document.body.removeChild(textArea);
+        }
+
+        // === 關鍵修正：針對手機端最佳化的截圖功能 ===
+        function generateScreenshot() {
+            const element = document.getElementById('captureArea');
+            showToast("正在產生圖片，請稍候...");
+            
+            // 解決手機端因為頁面向下捲動，導致截圖到一片空白的 Bug
+            window.scrollTo(0, 0);
+            
+            // 使用 html2canvas
+            html2canvas(element, {
+                scale: 1.5, // 降低倍率，避免手機記憶體不足導致繪製崩潰
+                backgroundColor: "#ffffff",
+                useCORS: true,
+                logging: false
+            }).then(canvas => {
+                // 將格式從 png 改為 jpeg 並設定壓縮率 0.9，解決 Base64 檔案過大手機無法顯示的問題
+                const imgData = canvas.toDataURL("image/jpeg", 0.9);
+                document.getElementById('screenshotImage').src = imgData;
+                document.getElementById('screenshotModal').classList.remove('hidden');
+            }).catch(err => {
+                console.error("產生截圖失敗:", err);
+                alert("產生截圖失敗，請改用文字複製功能。");
+            });
+        }
+
+        function closeScreenshotModal() {
+            document.getElementById('screenshotModal').classList.add('hidden');
         }
 
         function closeTip() {
@@ -639,19 +699,15 @@
         })
 
         async function loadAllData() {
-            try {
-                const { data: cateData } = await client.from("food_category").select("*").order("sort");
-                categoryList = cateData;
-                const { data: prodData } = await client.from("food_product").select(`
-                    id, name, price, cate_id, status,
-                    food_category(name)
-                `);
-                productWithCate = prodData;
-                renderSingleFoodByDB();
-                updateFlavorPrice();
-            } catch (err) {
-                console.error("讀取資料失敗：", err);
-            }
+            const { data: cateData } = await client.from("food_category").select("*").order("sort");
+            categoryList = cateData;
+            const { data: prodData } = await client.from("food_product").select(`
+                id, name, price, cate_id, status,
+                food_category(name)
+            `);
+            productWithCate = prodData;
+            renderSingleFoodByDB();
+            updateFlavorPrice();
         }
 
         function renderMealFoodByDB() {
@@ -825,105 +881,100 @@
         }
 
         function showSuccessPage(orderData) {
-            try {
-                // ==== 最保險的切換寫法：使用 inline-style ====
-                document.getElementById("orderMainPage").style.display = "none";
-                document.getElementById("orderSuccessPage").style.display = "block";
-                
-                document.getElementById("successOrderNo").textContent = orderData.orderNo;
-                document.getElementById("successOrderTime").textContent = orderData.nowTime;
-                document.getElementById("successPhoneLast3").textContent = orderData.phone3;
-                
-                let orderTypeText = "";
-                if (currentOrderType === "meal") {
-                    const mealTypeMap = { "smallBamboo": "小筍餐", "family": "全家餐", "smallSet": "小套餐" };
-                    orderTypeText = mealTypeMap[selectMeal] || "套餐";
-                } else {
-                    orderTypeText = "單點";
-                }
-                document.getElementById("successOrderType").textContent = orderTypeText;
-                
-                let foodListHtml = "";
-                orderData.foodList.forEach((item, idx) => {
-                    foodListHtml += `
-    <div class="detail-item">
-        <span class="detail-label food-num">${idx+1}.</span>
-        ${item.name} ${item.price}元 ${item.diffTxt || ""}
-    </div>`;
-                });
-                document.getElementById("successFoodList").innerHTML = foodListHtml;
-                
-                document.getElementById("successTotalPrice").textContent = orderData.totalAll;
-                
-                document.getElementById("successFlavor").textContent = orderData.flavorInfo.flavor;
-                document.getElementById("successSalt").textContent = orderData.flavorInfo.salt;
-                document.getElementById("successToppings").textContent = orderData.flavorInfo.toppings.length > 0 ? orderData.flavorInfo.toppings.join("、") : "無";
-                document.getElementById("successSpicy").textContent = orderData.flavorInfo.spicy;
-                
-                if (orderData.flavorInfo.removeBone) {
-                    document.getElementById("successBoneOption").style.display = "block";
-                } else {
-                    document.getElementById("successBoneOption").style.display = "none";
-                }
-                
-                window.scrollTo(0, 0);
-            } catch (err) {
-                alert("顯示成功畫面時發生錯誤：" + err.message);
+            document.getElementById("orderMainPage").classList.add("hidden");
+            document.getElementById("orderSuccessPage").classList.remove("hidden");
+            
+            document.getElementById("successOrderNo").textContent = orderData.orderNo;
+            document.getElementById("successOrderTime").textContent = orderData.nowTime;
+            document.getElementById("successPhoneLast3").textContent = orderData.phone3;
+            
+            let orderTypeText = "";
+            if (currentOrderType === "meal") {
+                const mealTypeMap = { "smallBamboo": "小筍餐", "family": "全家餐", "smallSet": "小套餐" };
+                orderTypeText = mealTypeMap[selectMeal] || "套餐";
+            } else {
+                orderTypeText = "單點";
             }
+            document.getElementById("successOrderType").textContent = orderTypeText;
+            
+            let foodListHtml = "";
+            orderData.foodList.forEach((item, idx) => {
+                foodListHtml += `
+<div class="detail-item">
+    <span class="detail-label food-num">${idx+1}.</span>
+    ${item.name} ${item.price}元 ${item.diffTxt || ""}
+</div>`;
+            });
+            document.getElementById("successFoodList").innerHTML = foodListHtml;
+            
+            document.getElementById("successTotalPrice").textContent = orderData.totalAll;
+            
+            document.getElementById("successFlavor").textContent = orderData.flavorInfo.flavor;
+            document.getElementById("successSalt").textContent = orderData.flavorInfo.salt;
+            document.getElementById("successToppings").textContent = orderData.flavorInfo.toppings.length > 0 ? orderData.flavorInfo.toppings.join("、") : "無";
+            document.getElementById("successSpicy").textContent = orderData.flavorInfo.spicy;
+            
+            if (orderData.flavorInfo.removeBone) {
+                document.getElementById("successBoneOption").style.display = "block";
+            } else {
+                document.getElementById("successBoneOption").style.display = "none";
+            }
+            
+            setTimeout(() => {
+                showToast("訂單已送出，請點擊下方按鈕複製或產生截圖。");
+            }, 500);
         }
 
         function backToOrderPage() {
-            document.getElementById("orderSuccessPage").style.display = "none";
-            document.getElementById("orderMainPage").style.display = "block";
+            document.getElementById("orderSuccessPage").classList.add("hidden");
+            document.getElementById("orderMainPage").classList.remove("hidden");
             clearSelect();
-            window.scrollTo(0, 0);
         }
 
         async function submitOrder() {
-            try {
-                if (currentOrderType === "meal") {
-                    if (!selectMeal) { alert("請先選套餐"); return; }
-                    if (needSelectNum > 0 && selectFoodArr.length < needSelectNum) {
-                        alert(`還差 ${needSelectNum - selectFoodArr.length} 樣小菜`);
-                        return;
-                    }
-                } else {
-                    if (selectFoodArr.length === 0) { alert("請至少選一樣食材"); return; }
-                }
-
-                const phone3 = document.getElementById("phoneLast3").value.trim();
-                if(phone3 === ""){
-                    alert("請填寫手機號碼末3碼,將成為你的取餐號碼.");
-                    document.getElementById("phoneLast3").focus();
+            if (currentOrderType === "meal") {
+                if (!selectMeal) { alert("請先選套餐"); return; }
+                if (needSelectNum > 0 && selectFoodArr.length < needSelectNum) {
+                    alert(`還差 ${needSelectNum - selectFoodArr.length} 樣小菜`);
                     return;
                 }
-                if(phone3.length !== 3){
-                    alert("手機末3碼需輸入3位數字");
-                    document.getElementById("phoneLast3").focus();
-                    return;
-                }
+            } else {
+                if (selectFoodArr.length === 0) { alert("請至少選一樣食材"); return; }
+            }
 
-                const flavorInfo = getFlavorInfo();
-                const orderNo = "ORD" + Date.now();
-                const nowTime = getNowDateTime();
-                const totalAll = baseMealPrice + totalDiff + flavorExtraPrice;
+            const phone3 = document.getElementById("phoneLast3").value.trim();
+            if(phone3 === ""){
+                alert("請填寫手機號碼末3碼,將成為你的取餐號碼.");
+                document.getElementById("phoneLast3").focus();
+                return;
+            }
+            if(phone3.length !== 3){
+                alert("手機末3碼需輸入3位數字");
+                document.getElementById("phoneLast3").focus();
+                return;
+            }
 
-                const foodList = selectFoodArr.map((item, idx) => {
-                    let diffTxt = "";
-                    if(currentOrderType==="meal" && item.price>20) diffTxt = `(補${item.price-20}元)`;
-                    return { name: item.name, price: item.price, diffTxt: diffTxt };
-                });
+            const flavorInfo = getFlavorInfo();
+            const orderNo = "ORD" + Date.now();
+            const nowTime = getNowDateTime();
+            const totalAll = baseMealPrice + totalDiff + flavorExtraPrice;
 
-                let orderTypeText = "單點";
-                if (currentOrderType === "meal") {
-                    const mealTypeMap = { "smallBamboo": "小筍餐", "family": "全家餐", "smallSet": "小套餐" };
-                    orderTypeText = mealTypeMap[selectMeal] || "套餐";
-                }
-                let foodText = foodList.map((f, i) => `${i + 1}. ${f.name} ${f.price}元 ${f.diffTxt}`.trim()).join('\n');
-                let toppingsText = flavorInfo.toppings.length > 0 ? flavorInfo.toppings.join("、") : "無";
-                let boneText = flavorInfo.removeBone ? "、雞腿去骨" : "";
-                
-                globalClipboardText = `【雞老闆輕食料理 訂單明細】
+            const foodList = selectFoodArr.map((item, idx) => {
+                let diffTxt = "";
+                if(currentOrderType==="meal" && item.price>20) diffTxt = `(補${item.price-20}元)`;
+                return { name: item.name, price: item.price, diffTxt: diffTxt };
+            });
+
+            let orderTypeText = "單點";
+            if (currentOrderType === "meal") {
+                const mealTypeMap = { "smallBamboo": "小筍餐", "family": "全家餐", "smallSet": "小套餐" };
+                orderTypeText = mealTypeMap[selectMeal] || "套餐";
+            }
+            let foodText = foodList.map((f, i) => `${i + 1}. ${f.name} ${f.price}元 ${f.diffTxt}`.trim()).join('\n');
+            let toppingsText = flavorInfo.toppings.length > 0 ? flavorInfo.toppings.join("、") : "無";
+            let boneText = flavorInfo.removeBone ? "、雞腿去骨" : "";
+            
+            globalClipboardText = `【雞老闆輕食料理 訂單明細】
 取餐叫號：${phone3}
 訂單類型：${orderTypeText}
 
@@ -934,39 +985,34 @@ ${foodText}
 應付總額：${totalAll} 元
 訂單編號：${orderNo}`;
 
-                showToast("訂單處理中，請稍候...");
+            showToast("處理中...");
+            const { error } = await client.from("food_orderlist").insert([{
+                order_no: orderNo,
+                order_type: currentOrderType === "meal" ? selectMeal : "single",
+                select_food: selectFoodArr,
+                total_price: totalAll,
+                diff_price: totalDiff,
+                flavor_price: flavorExtraPrice,
+                flavor_info: flavorInfo,
+                phone_last3: phone3,
+                create_time: nowTime,
+                note: flavorInfo.removeBone ? "雞腿去骨" : ""
+            }]);
+            
+            if (error) {
+                console.log(error);
+                alert("訂單送出失敗");
+            } else {
+                const orderData = {
+                    orderNo: orderNo,
+                    nowTime: nowTime,
+                    phone3: phone3,
+                    foodList: foodList,
+                    flavorInfo: flavorInfo,
+                    totalAll: totalAll
+                };
                 
-                const { error } = await client.from("food_orderlist").insert([{
-                    order_no: orderNo,
-                    order_type: currentOrderType === "meal" ? selectMeal : "single",
-                    select_food: selectFoodArr,
-                    total_price: totalAll,
-                    diff_price: totalDiff,
-                    flavor_price: flavorExtraPrice,
-                    flavor_info: flavorInfo,
-                    phone_last3: phone3,
-                    create_time: nowTime,
-                    note: flavorInfo.removeBone ? "雞腿去骨" : ""
-                }]);
-                
-                if (error) {
-                    console.log(error);
-                    alert("訂單送出失敗：" + JSON.stringify(error));
-                } else {
-                    const orderData = {
-                        orderNo: orderNo,
-                        nowTime: nowTime,
-                        phone3: phone3,
-                        foodList: foodList,
-                        flavorInfo: flavorInfo,
-                        totalAll: totalAll
-                    };
-                    
-                    showSuccessPage(orderData);
-                }
-            } catch (err) {
-                // 如果手機發生奇怪的錯誤，會在這裡跳出提示
-                alert("發生未預期錯誤，請截圖給店家：" + err.message);
+                showSuccessPage(orderData);
             }
         }
 
